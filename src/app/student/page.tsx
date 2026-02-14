@@ -1,23 +1,45 @@
 "use client";
 
 import Navbar from '@/app/components/Navbar';
-import { Book, Layers, Search, Clock, Star, SlidersHorizontal, RotateCcw, X, History } from 'lucide-react';
+import { Book, Layers, Search, Clock, Star, SlidersHorizontal, RotateCcw, X, History, Sparkles, ChevronDown } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
 // Mock Data
 const ALL_BOOKS = [
-  { id: 1, title: 'Introduction to Algorithms', author: 'Thomas H. Cormen', genre: 'Computer Science', color: 'bg-red-900', rating: 4.8, year: 2009, stock: true },
-  { id: 2, title: 'Clean Code', author: 'Robert C. Martin', genre: 'Software Engineering', color: 'bg-blue-800', rating: 4.9, year: 2008, stock: true },
-  { id: 3, title: 'The Pragmatic Programmer', author: 'Andrew Hunt', genre: 'Software Engineering', color: 'bg-slate-700', rating: 4.7, year: 1999, stock: false },
-  { id: 4, title: 'Design Patterns', author: 'Erich Gamma', genre: 'Computer Science', color: 'bg-emerald-800', rating: 4.6, year: 1994, stock: true },
-  { id: 5, title: 'To Kill a Mockingbird', author: 'Harper Lee', genre: 'Fiction', color: 'bg-amber-700', rating: 4.9, year: 1960, stock: true },
-  { id: 6, title: 'Sapiens', author: 'Yuval Noah Harari', genre: 'History', color: 'bg-orange-800', rating: 4.5, year: 2011, stock: true },
-  { id: 7, title: 'The Psychology of Money', author: 'Morgan Housel', genre: 'Finance', color: 'bg-green-700', rating: 4.8, year: 2020, stock: true },
-  { id: 8, title: 'Atomic Habits', author: 'James Clear', genre: 'Self-Help', color: 'bg-yellow-600', rating: 4.9, year: 2018, stock: true },
+  // Computer Science
+  { id: 1, title: 'Introduction to Algorithms', author: 'Thomas H. Cormen', genre: 'Computer Science', color: 'bg-red-900', rating: 4.8, year: 2009, stock: true, courses: ['Computer Science'] },
+  { id: 2, title: 'Clean Code', author: 'Robert C. Martin', genre: 'Software Engineering', color: 'bg-blue-800', rating: 4.9, year: 2008, stock: true, courses: ['Computer Science', 'Information Tech'] },
+  { id: 3, title: 'The Pragmatic Programmer', author: 'Andrew Hunt', genre: 'Software Engineering', color: 'bg-slate-700', rating: 4.7, year: 1999, stock: false, courses: ['Computer Science', 'Information Tech'] },
+  { id: 4, title: 'Design Patterns', author: 'Erich Gamma', genre: 'Computer Science', color: 'bg-emerald-800', rating: 4.6, year: 1994, stock: true, courses: ['Computer Science'] },
+  
+  // Information Tech
+  { id: 5, title: 'The Phoenix Project', author: 'Gene Kim', genre: 'IT Management', color: 'bg-orange-700', rating: 4.8, year: 2013, stock: true, courses: ['Information Tech', 'Computer Science'] },
+  { id: 6, title: 'Network Warrior', author: 'Gary A. Donahue', genre: 'Networking', color: 'bg-indigo-900', rating: 4.6, year: 2011, stock: true, courses: ['Information Tech'] },
+  { id: 7, title: 'Web Design with HTML, CSS', author: 'Jon Duckett', genre: 'Web Development', color: 'bg-pink-800', rating: 4.9, year: 2011, stock: true, courses: ['Information Tech', 'Computer Science'] },
+  
+  // Engineering
+  { id: 8, title: 'Engineering Mechanics', author: 'J.L. Meriam', genre: 'Engineering', color: 'bg-stone-700', rating: 4.5, year: 2015, stock: true, courses: ['Engineering'] },
+  { id: 9, title: 'Electric Circuits', author: 'James W. Nilsson', genre: 'Electronics', color: 'bg-yellow-700', rating: 4.4, year: 2014, stock: true, courses: ['Engineering'] },
+  { id: 10, title: 'Thermodynamics: An Engineering Approach', author: 'Yunus A. Cengel', genre: 'Engineering', color: 'bg-red-800', rating: 4.7, year: 2018, stock: true, courses: ['Engineering'] },
+  { id: 11, title: 'Materials Science and Engineering', author: 'William D. Callister', genre: 'Engineering', color: 'bg-gray-600', rating: 4.8, year: 2013, stock: false, courses: ['Engineering'] },
+
+  // Education
+  { id: 12, title: 'The First Days of School', author: 'Harry K. Wong', genre: 'Education', color: 'bg-teal-700', rating: 4.9, year: 2018, stock: true, courses: ['Education'] },
+  { id: 13, title: 'Mindset: The New Psychology', author: 'Carol S. Dweck', genre: 'Psychology', color: 'bg-blue-600', rating: 4.6, year: 2006, stock: true, courses: ['Education'] },
+  { id: 14, title: 'Pedagogy of the Oppressed', author: 'Paulo Freire', genre: 'Education', color: 'bg-purple-800', rating: 4.8, year: 1968, stock: true, courses: ['Education'] },
+  
+  // General / Fiction / Others
+  { id: 15, title: 'To Kill a Mockingbird', author: 'Harper Lee', genre: 'Fiction', color: 'bg-amber-700', rating: 4.9, year: 1960, stock: true, courses: ['Education', 'General'] },
+  { id: 16, title: 'Sapiens', author: 'Yuval Noah Harari', genre: 'History', color: 'bg-orange-800', rating: 4.5, year: 2011, stock: true, courses: ['History', 'General'] },
+  { id: 17, title: 'The Psychology of Money', author: 'Morgan Housel', genre: 'Finance', color: 'bg-green-700', rating: 4.8, year: 2020, stock: true, courses: ['Finance', 'General'] },
+  { id: 18, title: 'Atomic Habits', author: 'James Clear', genre: 'Self-Help', color: 'bg-yellow-600', rating: 4.9, year: 2018, stock: true, courses: ['General', 'Education'] },
+  { id: 19, title: 'Deep Work', author: 'Cal Newport', genre: 'Productivity', color: 'bg-zinc-700', rating: 4.7, year: 2016, stock: true, courses: ['Computer Science', 'General'] },
+  { id: 20, title: 'Thinking, Fast and Slow', author: 'Daniel Kahneman', genre: 'Psychology', color: 'bg-cyan-800', rating: 4.6, year: 2011, stock: true, courses: ['Psychology', 'General'] },
 ];
 
-const GENRES = ['All', 'Computer Science', 'Software Engineering', 'Fiction', 'History', 'Finance', 'Self-Help'];
+const GENRES = ['All', 'Computer Science', 'Software Engineering', 'Fiction', 'History', 'Finance', 'Self-Help', 'Engineering', 'Education', 'Psychology'];
+const COURSES = ['Computer Science', 'Information Tech', 'Engineering', 'Education'];
 
 export default function StudentDashboard() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -26,6 +48,9 @@ export default function StudentDashboard() {
   // Recent Search State
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [showRecent, setShowRecent] = useState(false);
+
+  // User Course State (For Recommendations)
+  const [userCourse, setUserCourse] = useState('Computer Science');
 
   // Filter Values
   const [selectedGenre, setSelectedGenre] = useState('All');
@@ -89,6 +114,9 @@ export default function StudentDashboard() {
     setSearchTerm('');
   };
 
+  // Recommendations Logic
+  const recommendedBooks = ALL_BOOKS.filter(book => book.courses?.includes(userCourse)).slice(0, 4);
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar userName="John Student" userRole="Student" />
@@ -106,6 +134,57 @@ export default function StudentDashboard() {
 
       <main className="max-w-7xl mx-auto px-8 -mt-16 pb-12 relative z-20">
         
+        {/* === RECOMMENDED SECTION === */}
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 mb-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
+           <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                 <div className="p-2 bg-yellow-100 rounded-lg text-yellow-600">
+                    <Sparkles size={20} className="fill-yellow-600" />
+                 </div>
+                 <div>
+                    <h2 className="text-xl font-bold text-gray-900 leading-none">Recommended for You</h2>
+                    <p className="text-xs text-gray-500 font-medium mt-1">Based on your course: <span className="text-usant-red">{userCourse}</span></p>
+                 </div>
+              </div>
+              
+              {/* Course Switcher (Demo Only) */}
+              <div className="relative group">
+                 <button className="flex items-center gap-2 text-xs font-bold text-gray-500 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-100 transition">
+                    Switch Course <ChevronDown size={12} />
+                 </button>
+                 <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden hidden group-hover:block z-50 animate-in fade-in zoom-in-95 duration-150">
+                    {COURSES.map(course => (
+                       <button 
+                         key={course}
+                         onClick={() => setUserCourse(course)}
+                         className={`w-full text-left px-4 py-2 text-sm hover:bg-red-50 hover:text-usant-red transition ${userCourse === course ? 'font-bold text-usant-red bg-red-50' : 'text-gray-600'}`}
+                       >
+                         {course}
+                       </button>
+                    ))}
+                 </div>
+              </div>
+           </div>
+
+           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+              {recommendedBooks.map(book => (
+                 <Link href={`/book/${book.id}`} key={book.id} className="flex gap-4 p-3 rounded-xl hover:bg-gray-50 border border-transparent hover:border-gray-200 transition-all group cursor-pointer">
+                    <div className={`w-16 h-20 ${book.color} rounded-md shadow-md flex-shrink-0 flex items-center justify-center`}>
+                       <span className="text-[8px] text-white/80 font-serif text-center px-1">{book.title.substring(0, 15)}...</span>
+                    </div>
+                    <div className="flex flex-col justify-center min-w-0">
+                       <h4 className="font-bold text-gray-900 text-sm truncate group-hover:text-usant-red transition-colors">{book.title}</h4>
+                       <p className="text-xs text-gray-500 mb-1 truncate">{book.author}</p>
+                       <div className="flex items-center gap-1">
+                          <Star size={10} className="fill-orange-400 text-orange-400" />
+                          <span className="text-[10px] font-bold text-gray-700">{book.rating}</span>
+                       </div>
+                    </div>
+                 </Link>
+              ))}
+           </div>
+        </div>
+
         {/* === SEARCH & FILTER PANEL (Matches Screenshot) === */}
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 mb-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
           
