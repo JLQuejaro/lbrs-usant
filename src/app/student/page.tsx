@@ -1,8 +1,8 @@
 "use client";
 
 import Navbar from '@/app/components/Navbar';
-import { Book, Layers, Search, Clock, Star, SlidersHorizontal, RotateCcw } from 'lucide-react';
-import { useState } from 'react';
+import { Book, Layers, Search, Clock, Star, SlidersHorizontal, RotateCcw, X, History } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
 // Mock Data
@@ -23,12 +23,44 @@ export default function StudentDashboard() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(true); // Default to TRUE to show it immediately
   
+  // Recent Search State
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [showRecent, setShowRecent] = useState(false);
+
   // Filter Values
   const [selectedGenre, setSelectedGenre] = useState('All');
   const [minRating, setMinRating] = useState(0);
   const [maxYear, setMaxYear] = useState(2026);
   const [inStockOnly, setInStockOnly] = useState(false);
   const [sortBy, setSortBy] = useState('Relevance');
+
+  // Load Recent Searches on Mount
+  useEffect(() => {
+    const saved = localStorage.getItem('recentSearches');
+    if (saved) {
+      setRecentSearches(JSON.parse(saved));
+    }
+  }, []);
+
+  const addToRecent = (term: string) => {
+    if (!term.trim()) return;
+    const newRecent = [term, ...recentSearches.filter(t => t !== term)].slice(0, 5);
+    setRecentSearches(newRecent);
+    localStorage.setItem('recentSearches', JSON.stringify(newRecent));
+  };
+
+  const removeRecent = (term: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent clicking the item
+    const newRecent = recentSearches.filter(t => t !== term);
+    setRecentSearches(newRecent);
+    localStorage.setItem('recentSearches', JSON.stringify(newRecent));
+  };
+
+  const handleSearchSelect = (term: string) => {
+    setSearchTerm(term);
+    addToRecent(term);
+    setShowRecent(false);
+  };
 
   // Filter Logic
   const filteredBooks = ALL_BOOKS.filter(book => {
@@ -84,15 +116,58 @@ export default function StudentDashboard() {
 
           {/* Search Bar Row */}
           <div className="flex flex-col md:flex-row gap-4 mb-8">
-            <div className="relative flex-1 bg-gray-50 rounded-lg">
+            <div className="relative flex-1 bg-gray-50 rounded-lg group">
                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
                <input 
                   type="text" 
                   placeholder="Search by title, author, or genre..." 
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
+                  onFocus={() => setShowRecent(true)}
+                  onBlur={() => setTimeout(() => setShowRecent(false), 200)}
+                  onKeyDown={(e) => e.key === 'Enter' && addToRecent(searchTerm)}
                   className="w-full pl-12 pr-4 py-4 bg-transparent border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-usant-red/20 focus:border-usant-red transition-all"
                />
+
+               {/* RECENTLY SEARCHED DROPDOWN */}
+               {showRecent && recentSearches.length > 0 && (
+                 <div className="absolute top-full left-0 right-0 mt-2 w-full bg-white rounded-lg shadow-xl border border-gray-100 overflow-hidden z-50 ring-1 ring-black/5 animate-in slide-in-from-top-1 fade-in duration-200">
+                   <div className="flex items-center justify-between px-5 py-3 bg-gray-50/80 backdrop-blur-sm border-b border-gray-100">
+                     <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                       <History size={12} /> Recent History
+                     </span>
+                     <button 
+                       onMouseDown={(e) => { e.preventDefault(); setRecentSearches([]); localStorage.removeItem('recentSearches'); }} 
+                       className="text-[10px] text-gray-400 hover:text-red-600 font-bold hover:underline transition-colors"
+                     >
+                       Clear History
+                     </button>
+                   </div>
+                   <ul className="max-h-64 overflow-y-auto">
+                     {recentSearches.map((term, index) => (
+                       <li key={index} className="border-b border-gray-50 last:border-0">
+                         <button 
+                           onMouseDown={(e) => { e.preventDefault(); handleSearchSelect(term); }}
+                           className="w-full text-left px-5 py-3.5 hover:bg-red-50/30 flex items-center justify-between group/item transition-all duration-200"
+                         >
+                           <div className="flex items-center gap-4 text-gray-600 group-hover/item:text-gray-900 group-hover/item:translate-x-1 transition-transform">
+                             <div className="p-1.5 bg-gray-100 rounded-md group-hover/item:bg-white group-hover/item:shadow-sm transition-all">
+                                <Clock size={14} className="text-gray-400 group-hover/item:text-usant-red transition-colors" />
+                             </div>
+                             <span className="font-medium text-sm">{term}</span>
+                           </div>
+                           <div 
+                             onMouseDown={(e) => removeRecent(term, e)}
+                             className="p-1.5 rounded-full hover:bg-red-100 text-gray-300 hover:text-red-600 transition-all opacity-0 group-hover/item:opacity-100 scale-90 hover:scale-100"
+                           >
+                             <X size={14} />
+                           </div>
+                         </button>
+                       </li>
+                     ))}
+                   </ul>
+                 </div>
+               )}
             </div>
             <button 
               onClick={() => setShowFilters(!showFilters)}
