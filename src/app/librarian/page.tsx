@@ -3,15 +3,15 @@
 
 import Navbar from '@/app/components/Navbar';
 import AddBookModal from '@/app/components/AddBookModal'; // Import the new modal
-import { Book, Users, Layers, Plus, Search, Edit, Trash2 } from 'lucide-react';
+import { Book, Users, Layers, Plus, Search, Edit, Trash2, CheckCircle, XCircle } from 'lucide-react';
 import { useState } from 'react';
 
 // Initial Mock Data
 const INITIAL_BOOKS = [
-  { id: 1, title: 'Introduction to Algorithms', author: 'Thomas H. Cormen', genre: 'Computer Science', year: 2009 },
-  { id: 2, title: 'Clean Code', author: 'Robert C. Martin', genre: 'Software Engineering', year: 2008 },
-  { id: 3, title: 'The Pragmatic Programmer', author: 'Andrew Hunt', genre: 'Software Engineering', year: 1999 },
-  { id: 4, title: 'Design Patterns', author: 'Erich Gamma', genre: 'Computer Science', year: 1994 },
+  { id: 1, title: 'Introduction to Algorithms', author: 'Thomas H. Cormen', genre: 'Computer Science', year: 2009, stock: true, courses: ['Computer Science'] },
+  { id: 2, title: 'Clean Code', author: 'Robert C. Martin', genre: 'Software Engineering', year: 2008, stock: true, courses: ['Computer Science', 'Information Tech'] },
+  { id: 3, title: 'The Pragmatic Programmer', author: 'Andrew Hunt', genre: 'Software Engineering', year: 1999, stock: false, courses: ['Computer Science', 'Information Tech'] },
+  { id: 4, title: 'Design Patterns', author: 'Erich Gamma', genre: 'Computer Science', year: 1994, stock: true, courses: ['Computer Science'] },
 ];
 
 export default function LibrarianDashboard() {
@@ -85,7 +85,8 @@ export default function LibrarianDashboard() {
                 <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider opacity-90">Book</th>
                 <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider opacity-90">Author</th>
                 <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider opacity-90">Genre</th>
-                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider opacity-90">Year</th>
+                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider opacity-90">Stock</th>
+                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider opacity-90">Courses</th>
                 <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-right opacity-90">Actions</th>
               </tr>
             </thead>
@@ -102,7 +103,29 @@ export default function LibrarianDashboard() {
                       {book.genre}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-gray-600">{book.year}</td>
+                  <td className="px-6 py-4">
+                    {book.stock ? (
+                      <span className="flex items-center gap-1 text-xs font-bold text-green-700 bg-green-50 px-2 py-1 rounded-md border border-green-100 w-fit">
+                        <CheckCircle size={12} /> In Stock
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1 text-xs font-bold text-red-700 bg-red-50 px-2 py-1 rounded-md border border-red-100 w-fit">
+                        <XCircle size={12} /> Out of Stock
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex flex-wrap gap-1">
+                      {book.courses?.slice(0, 2).map((course: string) => (
+                         <span key={course} className="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded border border-gray-200">
+                           {course}
+                         </span>
+                      ))}
+                      {book.courses?.length > 2 && (
+                        <span className="text-[10px] text-gray-400 font-medium">+{book.courses.length - 2} more</span>
+                      )}
+                    </div>
+                  </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-3 opacity-60 group-hover:opacity-100 transition-opacity">
                       <button className="text-usant-red hover:bg-red-50 p-2 rounded-lg transition"><Edit size={16} /></button>
