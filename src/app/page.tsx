@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { ArrowRight, UserPlus, CheckCircle } from 'lucide-react'; 
 import Image from 'next/image';
-import { userTypesByRole, UserRole, UserType } from './lib/mockData';
+import { userTypesByRole, UserRole, UserType, MOCK_USERS } from './lib/mockData';
 import { useRouter } from 'next/navigation';
 
 export default function AuthPage() {
@@ -13,6 +13,8 @@ export default function AuthPage() {
   const [isRegistering, setIsRegistering] = useState(false);
 
   // Form States
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [role, setRole] = useState<UserRole>('student');
   const [userType, setUserType] = useState<UserType>(userTypesByRole['student'][0]);
   
@@ -34,10 +36,16 @@ export default function AuthPage() {
       setIsRegistering(false); // Switch back to login after registering
     } else {
       // Handle Login Routing
-      if (role === 'admin') router.push('/admin');
-      else if (role === 'staff' && userType === 'Librarian') router.push('/librarian');
-      else if (role === 'faculty') router.push('/faculty');
-      else router.push('/student');
+      const user = MOCK_USERS.find(u => u.email === email);
+      
+      if (user) {
+        if (user.role === 'admin') router.push('/admin');
+        else if (user.role === 'staff' && user.userType === 'Librarian') router.push('/librarian');
+        else if (user.role === 'faculty') router.push('/faculty');
+        else router.push('/student');
+      } else {
+        alert("Invalid email or password (try the demo buttons below!)");
+      }
     }
   };
 
@@ -99,55 +107,69 @@ export default function AuthPage() {
             {/* Email (Common) */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-              <input type="email" placeholder="you@usant.edu" className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-200 focus:ring-2 focus:ring-usant-red focus:outline-none transition-all" />
+              <input 
+                type="email" 
+                placeholder="you@usant.edu" 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-200 focus:ring-2 focus:ring-usant-red focus:outline-none transition-all" 
+              />
             </div>
 
             {/* Password (Common) */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-              <input type="password" placeholder="••••••••" className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-200 focus:ring-2 focus:ring-usant-red focus:outline-none transition-all" />
+              <input 
+                type="password" 
+                placeholder="••••••••" 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-200 focus:ring-2 focus:ring-usant-red focus:outline-none transition-all" 
+              />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              {/* Role Dropdown */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
-                <div className="relative">
-                  <select 
-                    value={role} 
-                    onChange={(e) => handleRoleChange(e.target.value as UserRole)}
-                    className="w-full px-3 py-2 rounded-lg bg-white border border-gray-200 focus:outline-none focus:ring-2 focus:ring-usant-red text-gray-900 appearance-none"
-                  >
-                    <option value="student">Student</option>
-                    <option value="faculty">Faculty</option>
-                    <option value="staff">Staff</option>
-                    <option value="admin">Admin</option>
-                  </select>
-                   <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            {isRegistering && (
+              <div className="grid grid-cols-2 gap-4 animate-in slide-in-from-top-2 fade-in duration-300">
+                {/* Role Dropdown */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                  <div className="relative">
+                    <select 
+                      value={role} 
+                      onChange={(e) => handleRoleChange(e.target.value as UserRole)}
+                      className="w-full px-3 py-2 rounded-lg bg-white border border-gray-200 focus:outline-none focus:ring-2 focus:ring-usant-red text-gray-900 appearance-none"
+                    >
+                      <option value="student">Student</option>
+                      <option value="faculty">Faculty</option>
+                      <option value="staff">Staff</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                     <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                    </div>
+                  </div>
+                </div>
+
+                {/* User Type Dropdown */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">User Type</label>
+                  <div className="relative">
+                    <select 
+                      value={userType} 
+                      onChange={(e) => setUserType(e.target.value as UserType)}
+                      className="w-full px-3 py-2 rounded-lg bg-white border border-gray-200 focus:outline-none focus:ring-2 focus:ring-usant-red text-gray-900 appearance-none"
+                    >
+                      {userTypesByRole[role].map((type) => (
+                        <option key={type} value={type}>{type}</option>
+                      ))}
+                    </select>
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                    </div>
                   </div>
                 </div>
               </div>
-
-              {/* User Type Dropdown */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">User Type</label>
-                <div className="relative">
-                  <select 
-                    value={userType} 
-                    onChange={(e) => setUserType(e.target.value as UserType)}
-                    className="w-full px-3 py-2 rounded-lg bg-white border border-gray-200 focus:outline-none focus:ring-2 focus:ring-usant-red text-gray-900 appearance-none"
-                  >
-                    {userTypesByRole[role].map((type) => (
-                      <option key={type} value={type}>{type}</option>
-                    ))}
-                  </select>
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-                  </div>
-                </div>
-              </div>
-            </div>
+            )}
 
             {/* REGISTER ONLY: Course & Year (Only for Students) */}
             {isRegistering && role === 'student' && (
@@ -209,10 +231,10 @@ export default function AuthPage() {
              <div className="mt-6 pt-4 border-t border-gray-100">
                 <p className="text-center text-xs text-gray-400 mb-4">Quick Demo Login:</p>
                 <div className="grid grid-cols-4 gap-2">
-                  <button onClick={() => setRole('student')} className="text-[10px] py-1 border rounded text-usant-red border-usant-red hover:bg-red-50">Student</button>
-                  <button onClick={() => setRole('faculty')} className="text-[10px] py-1 border rounded text-orange-600 border-orange-600 hover:bg-orange-50">Faculty</button>
-                  <button onClick={() => {setRole('staff'); setUserType('Librarian')}} className="text-[10px] py-1 border rounded text-gray-600 border-gray-600 hover:bg-gray-50">Librarian</button>
-                  <button onClick={() => setRole('admin')} className="text-[10px] py-1 border rounded text-gray-600 border-gray-600 hover:bg-gray-50">Admin</button>
+                  <button onClick={() => setEmail('john@usant.edu')} className="text-[10px] py-1 border rounded text-usant-red border-usant-red hover:bg-red-50">Student</button>
+                  <button onClick={() => setEmail('rob@usant.edu')} className="text-[10px] py-1 border rounded text-orange-600 border-orange-600 hover:bg-orange-50">Faculty</button>
+                  <button onClick={() => setEmail('maria@usant.edu')} className="text-[10px] py-1 border rounded text-gray-600 border-gray-600 hover:bg-gray-50">Librarian</button>
+                  <button onClick={() => setEmail('admin@usant.edu')} className="text-[10px] py-1 border rounded text-gray-600 border-gray-600 hover:bg-gray-50">Admin</button>
                 </div>
              </div>
           )}
