@@ -1,9 +1,11 @@
 // src/components/Navbar.tsx
 "use client";
 
-import { LogOut, User, Library } from 'lucide-react';
+import { LogOut, User, Library, Heart, Bell } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useState, useEffect } from 'react';
+import { MOCK_NOTIFICATIONS } from '@/app/lib/mockData';
 
 interface NavbarProps {
   userName: string;
@@ -11,6 +13,14 @@ interface NavbarProps {
 }
 
 export default function Navbar({ userName, userRole }: NavbarProps) {
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    // In a real app, this would fetch from an API
+    const unread = MOCK_NOTIFICATIONS.filter(n => !n.read).length;
+    setUnreadCount(unread);
+  }, []);
+
   const getDashboardLink = () => {
     if (userRole === 'Student') return '/student';
     if (userRole === 'Faculty') return '/faculty';
@@ -41,6 +51,21 @@ export default function Navbar({ userName, userRole }: NavbarProps) {
             <Link href="/student/shelf" className="opacity-90 hover:opacity-100 hover:text-white transition flex items-center gap-2">
               <Library size={16} /> My Shelf
             </Link>
+            {userRole === 'Student' && (
+              <>
+                <Link href="/student/wishlist-page" className="opacity-90 hover:opacity-100 hover:text-white transition flex items-center gap-2">
+                  <Heart size={16} /> Wishlist
+                </Link>
+                <Link href="/student/notifications-page" className="relative opacity-90 hover:opacity-100 hover:text-white transition flex items-center gap-2">
+                  <Bell size={16} /> Notifications
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-white text-usant-red text-[8px] font-bold w-3.5 h-3.5 flex items-center justify-center rounded-full shadow-sm">
+                      {unreadCount}
+                    </span>
+                  )}
+                </Link>
+              </>
+            )}
           </div>
         )}
 

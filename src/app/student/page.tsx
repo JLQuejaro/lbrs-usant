@@ -1,42 +1,10 @@
 "use client";
 
 import Navbar from '@/app/components/Navbar';
-import { Book, Layers, Search, Clock, Star, SlidersHorizontal, RotateCcw, X, History, Sparkles, ChevronDown } from 'lucide-react';
+import { Book, Layers, Search, Clock, Star, SlidersHorizontal, RotateCcw, X, History, Sparkles, ChevronDown, Users, Heart, Bell, Library, ShieldCheck } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-
-// Mock Data
-const ALL_BOOKS = [
-  // Computer Science
-  { id: 1, title: 'Introduction to Algorithms', author: 'Thomas H. Cormen', genre: 'Computer Science', color: 'bg-red-900', rating: 4.8, year: 2009, stock: true, courses: ['Computer Science'] },
-  { id: 2, title: 'Clean Code', author: 'Robert C. Martin', genre: 'Software Engineering', color: 'bg-blue-800', rating: 4.9, year: 2008, stock: true, courses: ['Computer Science', 'Information Tech'] },
-  { id: 3, title: 'The Pragmatic Programmer', author: 'Andrew Hunt', genre: 'Software Engineering', color: 'bg-slate-700', rating: 4.7, year: 1999, stock: false, courses: ['Computer Science', 'Information Tech'] },
-  { id: 4, title: 'Design Patterns', author: 'Erich Gamma', genre: 'Computer Science', color: 'bg-emerald-800', rating: 4.6, year: 1994, stock: true, courses: ['Computer Science'] },
-  
-  // Information Tech
-  { id: 5, title: 'The Phoenix Project', author: 'Gene Kim', genre: 'IT Management', color: 'bg-orange-700', rating: 4.8, year: 2013, stock: true, courses: ['Information Tech', 'Computer Science'] },
-  { id: 6, title: 'Network Warrior', author: 'Gary A. Donahue', genre: 'Networking', color: 'bg-indigo-900', rating: 4.6, year: 2011, stock: true, courses: ['Information Tech'] },
-  { id: 7, title: 'Web Design with HTML, CSS', author: 'Jon Duckett', genre: 'Web Development', color: 'bg-pink-800', rating: 4.9, year: 2011, stock: true, courses: ['Information Tech', 'Computer Science'] },
-  
-  // Engineering
-  { id: 8, title: 'Engineering Mechanics', author: 'J.L. Meriam', genre: 'Engineering', color: 'bg-stone-700', rating: 4.5, year: 2015, stock: true, courses: ['Engineering'] },
-  { id: 9, title: 'Electric Circuits', author: 'James W. Nilsson', genre: 'Electronics', color: 'bg-yellow-700', rating: 4.4, year: 2014, stock: true, courses: ['Engineering'] },
-  { id: 10, title: 'Thermodynamics: An Engineering Approach', author: 'Yunus A. Cengel', genre: 'Engineering', color: 'bg-red-800', rating: 4.7, year: 2018, stock: true, courses: ['Engineering'] },
-  { id: 11, title: 'Materials Science and Engineering', author: 'William D. Callister', genre: 'Engineering', color: 'bg-gray-600', rating: 4.8, year: 2013, stock: false, courses: ['Engineering'] },
-
-  // Education
-  { id: 12, title: 'The First Days of School', author: 'Harry K. Wong', genre: 'Education', color: 'bg-teal-700', rating: 4.9, year: 2018, stock: true, courses: ['Education'] },
-  { id: 13, title: 'Mindset: The New Psychology', author: 'Carol S. Dweck', genre: 'Psychology', color: 'bg-blue-600', rating: 4.6, year: 2006, stock: true, courses: ['Education'] },
-  { id: 14, title: 'Pedagogy of the Oppressed', author: 'Paulo Freire', genre: 'Education', color: 'bg-purple-800', rating: 4.8, year: 1968, stock: true, courses: ['Education'] },
-  
-  // General / Fiction / Others
-  { id: 15, title: 'To Kill a Mockingbird', author: 'Harper Lee', genre: 'Fiction', color: 'bg-amber-700', rating: 4.9, year: 1960, stock: true, courses: ['Education', 'General'] },
-  { id: 16, title: 'Sapiens', author: 'Yuval Noah Harari', genre: 'History', color: 'bg-orange-800', rating: 4.5, year: 2011, stock: true, courses: ['History', 'General'] },
-  { id: 17, title: 'The Psychology of Money', author: 'Morgan Housel', genre: 'Finance', color: 'bg-green-700', rating: 4.8, year: 2020, stock: true, courses: ['Finance', 'General'] },
-  { id: 18, title: 'Atomic Habits', author: 'James Clear', genre: 'Self-Help', color: 'bg-yellow-600', rating: 4.9, year: 2018, stock: true, courses: ['General', 'Education'] },
-  { id: 19, title: 'Deep Work', author: 'Cal Newport', genre: 'Productivity', color: 'bg-zinc-700', rating: 4.7, year: 2016, stock: true, courses: ['Computer Science', 'General'] },
-  { id: 20, title: 'Thinking, Fast and Slow', author: 'Daniel Kahneman', genre: 'Psychology', color: 'bg-cyan-800', rating: 4.6, year: 2011, stock: true, courses: ['Psychology', 'General'] },
-];
+import { ALL_BOOKS, getCollaborativeRecommendations, getLocalWishlist, toggleLocalWishlist, MOCK_NOTIFICATIONS } from '@/app/lib/mockData';
 
 const GENRES = ['All', 'Computer Science', 'Software Engineering', 'Fiction', 'History', 'Finance', 'Self-Help', 'Engineering', 'Education', 'Psychology'];
 const COURSES = ['Computer Science', 'Information Tech', 'Engineering', 'Education'];
@@ -45,12 +13,19 @@ export default function StudentDashboard() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(true); // Default to TRUE to show it immediately
   
+  // Wishlist & Notification Stats
+  const [wishlist, setWishlist] = useState<number[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+
   // Recent Search State
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [showRecent, setShowRecent] = useState(false);
 
   // User Course State (For Recommendations)
   const [userCourse, setUserCourse] = useState('Computer Science');
+
+  // Collaborative Recommendations
+  const [collabBooks, setCollabBooks] = useState(getCollaborativeRecommendations('1', 4, userCourse)); // Assuming '1' is John Student
 
   // Filter Values
   const [selectedGenre, setSelectedGenre] = useState('All');
@@ -59,13 +34,28 @@ export default function StudentDashboard() {
   const [inStockOnly, setInStockOnly] = useState(false);
   const [sortBy, setSortBy] = useState('Relevance');
 
-  // Load Recent Searches on Mount
+  // Update collaborative recommendations when course changes (simulating different peers)
+  useEffect(() => {
+     // In a real app, this would depend on the user's actual history/profile
+     setCollabBooks(getCollaborativeRecommendations('1', 4, userCourse));
+  }, [userCourse]);
+
+  // Load Initial Data on Mount
   useEffect(() => {
     const saved = localStorage.getItem('recentSearches');
     if (saved) {
       setRecentSearches(JSON.parse(saved));
     }
+    setWishlist(getLocalWishlist());
+    setUnreadCount(MOCK_NOTIFICATIONS.filter(n => !n.read).length);
   }, []);
+
+  const handleToggleWishlist = (e: React.MouseEvent, bookId: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const newWishlist = toggleLocalWishlist(bookId);
+    setWishlist(newWishlist);
+  };
 
   const addToRecent = (term: string) => {
     if (!term.trim()) return;
@@ -134,6 +124,40 @@ export default function StudentDashboard() {
 
       <main className="max-w-7xl mx-auto px-8 -mt-16 pb-12 relative z-20">
         
+        {/* === QUICK ACCESS OVERVIEW === */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+           <Link href="/student/wishlist-page" className="bg-white p-5 rounded-2xl shadow-lg border border-gray-100 flex items-center gap-4 hover:border-usant-red/30 transition-all group">
+              <div className="p-3 bg-red-50 rounded-xl text-usant-red group-hover:bg-usant-red group-hover:text-white transition-colors">
+                 <Heart size={24} className={wishlist.length > 0 ? 'fill-current' : ''} />
+              </div>
+              <div>
+                 <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">My Wishlist</p>
+                 <p className="text-2xl font-black text-gray-900">{wishlist.length} <span className="text-sm font-medium text-gray-500">Books Saved</span></p>
+              </div>
+           </Link>
+
+           <Link href="/student/notifications-page" className="bg-white p-5 rounded-2xl shadow-lg border border-gray-100 flex items-center gap-4 hover:border-usant-red/30 transition-all group">
+              <div className="p-3 bg-blue-50 rounded-xl text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors relative">
+                 <Bell size={24} />
+                 {unreadCount > 0 && <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 border-2 border-white rounded-full"></span>}
+              </div>
+              <div>
+                 <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Notifications</p>
+                 <p className="text-2xl font-black text-gray-900">{unreadCount} <span className="text-sm font-medium text-gray-500">Unread Alerts</span></p>
+              </div>
+           </Link>
+
+           <Link href="/student/shelf" className="bg-white p-5 rounded-2xl shadow-lg border border-gray-100 flex items-center gap-4 hover:border-usant-red/30 transition-all group">
+              <div className="p-3 bg-green-50 rounded-xl text-green-600 group-hover:bg-green-600 group-hover:text-white transition-colors">
+                 <Library size={24} />
+              </div>
+              <div>
+                 <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">My Shelf</p>
+                 <p className="text-2xl font-black text-gray-900">3 <span className="text-sm font-medium text-gray-500">Active Borrows</span></p>
+              </div>
+           </Link>
+        </div>
+        
         {/* === RECOMMENDED SECTION === */}
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 mb-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
            <div className="flex items-center justify-between mb-4">
@@ -168,11 +192,11 @@ export default function StudentDashboard() {
 
            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
               {recommendedBooks.map(book => (
-                 <Link href={`/book/${book.id}`} key={book.id} className="flex gap-4 p-3 rounded-xl hover:bg-gray-50 border border-transparent hover:border-gray-200 transition-all group cursor-pointer">
+                 <Link href={`/book/${book.id}`} key={book.id} className="flex gap-4 p-3 rounded-xl hover:bg-gray-50 border border-transparent hover:border-gray-200 transition-all group cursor-pointer relative">
                     <div className={`w-16 h-20 ${book.color} rounded-md shadow-md flex-shrink-0 flex items-center justify-center`}>
                        <span className="text-[8px] text-white/80 font-serif text-center px-1">{book.title.substring(0, 15)}...</span>
                     </div>
-                    <div className="flex flex-col justify-center min-w-0">
+                    <div className="flex flex-col justify-center min-w-0 flex-1">
                        <h4 className="font-bold text-gray-900 text-sm truncate group-hover:text-usant-red transition-colors">{book.title}</h4>
                        <p className="text-xs text-gray-500 mb-1 truncate">{book.author}</p>
                        <div className="flex items-center gap-1">
@@ -180,8 +204,57 @@ export default function StudentDashboard() {
                           <span className="text-[10px] font-bold text-gray-700">{book.rating}</span>
                        </div>
                     </div>
+                    <button 
+                       onClick={(e) => handleToggleWishlist(e, book.id)}
+                       className={`p-1.5 rounded-full hover:bg-white shadow-sm transition-all ${wishlist.includes(book.id) ? 'text-red-500' : 'text-gray-300'}`}
+                    >
+                       <Heart size={14} className={wishlist.includes(book.id) ? 'fill-current' : ''} />
+                    </button>
                  </Link>
               ))}
+           </div>
+        </div>
+
+        {/* === COLLABORATIVE FILTERING SECTION === */}
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 mb-8 animate-in fade-in slide-in-from-bottom-2 duration-500 delay-150">
+           <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                 <div className="p-2 bg-blue-100 rounded-lg text-blue-600">
+                    <Users size={20} className="fill-blue-600" />
+                 </div>
+                 <div>
+                    <h2 className="text-xl font-bold text-gray-900 leading-none">Students like you also read</h2>
+                    <p className="text-xs text-gray-500 font-medium mt-1">Trending among <span className="text-blue-600">{userCourse}</span> students</p>
+                 </div>
+              </div>
+           </div>
+
+           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+              {collabBooks.length > 0 ? collabBooks.map(book => (
+                 <Link href={`/book/${book.id}`} key={book.id} className="flex gap-4 p-3 rounded-xl hover:bg-gray-50 border border-transparent hover:border-gray-200 transition-all group cursor-pointer relative">
+                    <div className={`w-16 h-20 ${book.color} rounded-md shadow-md flex-shrink-0 flex items-center justify-center`}>
+                       <span className="text-[8px] text-white/80 font-serif text-center px-1">{book.title.substring(0, 15)}...</span>
+                    </div>
+                    <div className="flex flex-col justify-center min-w-0 flex-1">
+                       <h4 className="font-bold text-gray-900 text-sm truncate group-hover:text-blue-600 transition-colors">{book.title}</h4>
+                       <p className="text-xs text-gray-500 mb-1 truncate">{book.author}</p>
+                       <div className="flex items-center gap-1">
+                          <Star size={10} className="fill-orange-400 text-orange-400" />
+                          <span className="text-[10px] font-bold text-gray-700">{book.rating}</span>
+                       </div>
+                    </div>
+                    <button 
+                       onClick={(e) => handleToggleWishlist(e, book.id)}
+                       className={`p-1.5 rounded-full hover:bg-white shadow-sm transition-all ${wishlist.includes(book.id) ? 'text-red-500' : 'text-gray-300'}`}
+                    >
+                       <Heart size={14} className={wishlist.includes(book.id) ? 'fill-current' : ''} />
+                    </button>
+                 </Link>
+              )) : (
+                 <div className="col-span-4 py-8 text-center text-gray-400 italic text-sm">
+                    No peer activity found for this course yet.
+                 </div>
+              )}
            </div>
         </div>
 
@@ -398,7 +471,15 @@ export default function StudentDashboard() {
                 <p className="text-sm text-gray-500 mb-4">{book.author}</p>
                 
                 <div className="mt-auto pt-4 border-t border-gray-100 flex justify-between items-center">
-                   <span className="text-xs font-medium px-2 py-1 bg-gray-100 rounded text-gray-600">{book.genre}</span>
+                   <div className="flex items-center gap-2">
+                      <span className="text-xs font-medium px-2 py-1 bg-gray-100 rounded text-gray-600">{book.genre}</span>
+                      <button 
+                         onClick={(e) => handleToggleWishlist(e, book.id)}
+                         className={`p-2 rounded-full hover:bg-gray-50 transition-all ${wishlist.includes(book.id) ? 'text-red-500' : 'text-gray-400'}`}
+                      >
+                         <Heart size={18} className={wishlist.includes(book.id) ? 'fill-current' : ''} />
+                      </button>
+                   </div>
                    <span className="text-xs font-bold text-usant-red group-hover:underline">View Details</span>
                 </div>
               </div>
@@ -416,10 +497,17 @@ export default function StudentDashboard() {
             <button onClick={clearFilters} className="mt-6 px-6 py-2 bg-usant-red text-white font-medium rounded-lg hover:bg-red-800 transition">
               Clear All Filters
             </button>
-          </div>
-        )}
-
-      </main>
-    </div>
-  );
-}
+                    </div>
+                  )}
+          
+                  {/* Privacy & Security Note */}
+                  <div className="mt-16 flex items-center justify-center gap-2 text-gray-400">
+                     <ShieldCheck size={16} />
+                     <p className="text-xs font-medium">Your reading history and personal data are private and secure.</p>
+                  </div>
+          
+                </main>
+              </div>
+            );
+          }
+          
