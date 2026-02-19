@@ -1,5 +1,3 @@
-// lib/mockData.ts
-
 export type UserRole = 'student' | 'faculty' | 'staff' | 'admin';
 
 export type UserType = 
@@ -59,6 +57,7 @@ export interface Book {
   borrowCount: number; // For Analytics
   views: number; // For Analytics
   featured?: boolean; // For Featured Materials
+  location?: string; // <-- ADDED: For physical shelf tracking
 }
 
 export interface Journal {
@@ -124,28 +123,28 @@ export const ALL_BOOKS: Book[] = [
   { 
     id: 1, title: 'Introduction to Algorithms', author: 'Thomas H. Cormen', genre: 'Computer Science', color: 'bg-red-900', rating: 4.8, year: 2009, stock: true, courses: ['Computer Science'],
     description: "This title covers a broad range of algorithms in depth, yet makes their design and analysis accessible to all levels of readers.", pages: 1312, status: 'Available', reviewCount: 124,
-    dateAdded: '2023-01-15', borrowCount: 156, views: 1200, featured: true
+    dateAdded: '2023-01-15', borrowCount: 156, views: 1200, featured: true, location: 'Shelf 4B - CS Section'
   },
   { 
     id: 2, title: 'Clean Code', author: 'Robert C. Martin', genre: 'Software Engineering', color: 'bg-blue-800', rating: 4.9, year: 2008, stock: true, courses: ['Computer Science', 'Information Tech'],
     description: "Even bad code can function. But if code isn't clean, it can bring a development organization to its knees.", pages: 464, status: 'Available', reviewCount: 89,
-    dateAdded: '2023-02-20', borrowCount: 210, views: 1500, featured: true
+    dateAdded: '2023-02-20', borrowCount: 210, views: 1500, featured: true, location: 'Shelf 4A - SE Section'
   },
   { 
     id: 3, title: 'The Pragmatic Programmer', author: 'Andrew Hunt', genre: 'Software Engineering', color: 'bg-slate-700', rating: 4.7, year: 1999, stock: false, courses: ['Computer Science', 'Information Tech'],
     description: "The Pragmatic Programmer is one of those rare tech books you'll read, re-read, and read again over the years.", pages: 352, status: 'Borrowed', reviewCount: 56,
-    dateAdded: '2023-03-10', borrowCount: 145, views: 980
+    dateAdded: '2023-03-10', borrowCount: 145, views: 980, location: 'Shelf 4A - SE Section'
   },
-  { id: 4, title: 'Design Patterns', author: 'Erich Gamma', genre: 'Computer Science', color: 'bg-emerald-800', rating: 4.6, year: 1994, stock: true, courses: ['Computer Science'], reviewCount: 42, dateAdded: '2023-04-05', borrowCount: 98, views: 760 },
-  { id: 19, title: 'Deep Work', author: 'Cal Newport', genre: 'Productivity', color: 'bg-zinc-700', rating: 4.7, year: 2016, stock: true, courses: ['Computer Science', 'General'], reviewCount: 75, dateAdded: '2025-02-01', borrowCount: 85, views: 640 },
+  { id: 4, title: 'Design Patterns', author: 'Erich Gamma', genre: 'Computer Science', color: 'bg-emerald-800', rating: 4.6, year: 1994, stock: true, courses: ['Computer Science'], reviewCount: 42, dateAdded: '2023-04-05', borrowCount: 98, views: 760, location: 'Shelf 3C - General CS' },
+  { id: 19, title: 'Deep Work', author: 'Cal Newport', genre: 'Productivity', color: 'bg-zinc-700', rating: 4.7, year: 2016, stock: true, courses: ['Computer Science', 'General'], reviewCount: 75, dateAdded: '2025-02-01', borrowCount: 85, views: 640, location: 'Shelf 6A - Productivity' },
 
   // New Acquisitions
-  { id: 21, title: 'AI: A Modern Approach', author: 'Stuart Russell', genre: 'Computer Science', color: 'bg-indigo-700', rating: 4.9, year: 2021, stock: true, courses: ['Computer Science'], dateAdded: '2026-02-10', borrowCount: 5, views: 150 },
-  { id: 22, title: 'Modern Operating Systems', author: 'Andrew Tanenbaum', genre: 'Computer Science', color: 'bg-slate-800', rating: 4.7, year: 2022, stock: true, courses: ['Computer Science'], dateAdded: '2026-02-15', borrowCount: 2, views: 80 },
+  { id: 21, title: 'AI: A Modern Approach', author: 'Stuart Russell', genre: 'Computer Science', color: 'bg-indigo-700', rating: 4.9, year: 2021, stock: true, courses: ['Computer Science'], dateAdded: '2026-02-10', borrowCount: 5, views: 150, location: 'New Arrivals Display' },
+  { id: 22, title: 'Modern Operating Systems', author: 'Andrew Tanenbaum', genre: 'Computer Science', color: 'bg-slate-800', rating: 4.7, year: 2022, stock: true, courses: ['Computer Science'], dateAdded: '2026-02-15', borrowCount: 2, views: 80, location: 'New Arrivals Display' },
 
   // Engineering
-  { id: 8, title: 'Engineering Mechanics', author: 'J.L. Meriam', genre: 'Engineering', color: 'bg-stone-700', rating: 4.5, year: 2015, stock: true, courses: ['Engineering'], dateAdded: '2023-05-12', borrowCount: 45, views: 320 },
-  { id: 9, title: 'Electric Circuits', author: 'James W. Nilsson', genre: 'Electronics', color: 'bg-yellow-700', rating: 4.4, year: 2014, stock: true, courses: ['Engineering'], dateAdded: '2023-06-20', borrowCount: 38, views: 290 },
+  { id: 8, title: 'Engineering Mechanics', author: 'J.L. Meriam', genre: 'Engineering', color: 'bg-stone-700', rating: 4.5, year: 2015, stock: true, courses: ['Engineering'], dateAdded: '2023-05-12', borrowCount: 45, views: 320, location: 'Shelf 2A - Engineering' },
+  { id: 9, title: 'Electric Circuits', author: 'James W. Nilsson', genre: 'Electronics', color: 'bg-yellow-700', rating: 4.4, year: 2014, stock: true, courses: ['Engineering'], dateAdded: '2023-06-20', borrowCount: 38, views: 290, location: 'Shelf 2B - Electronics' },
 ];
 
 // 4. Journals & References

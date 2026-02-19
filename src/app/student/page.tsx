@@ -1,7 +1,7 @@
 "use client";
 
 import Navbar from '@/app/components/Navbar';
-import { Book, Layers, Search, Clock, Star, SlidersHorizontal, RotateCcw, X, History, Sparkles, ChevronDown, Users, Heart, Bell, Library, ShieldCheck } from 'lucide-react';
+import { Book, Layers, Search, Clock, Star, SlidersHorizontal, RotateCcw, X, History, Sparkles, ChevronDown, Users, Heart, Bell, Library, ShieldCheck, MapPin, GraduationCap } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ALL_BOOKS, getCollaborativeRecommendations, getLocalWishlist, toggleLocalWishlist, MOCK_NOTIFICATIONS } from '@/app/lib/mockData';
@@ -11,7 +11,7 @@ const COURSES = ['Computer Science', 'Information Tech', 'Engineering', 'Educati
 
 export default function StudentDashboard() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [showFilters, setShowFilters] = useState(true); // Default to TRUE to show it immediately
+  const [showFilters, setShowFilters] = useState(true);
   
   // Wishlist & Notification Stats
   const [wishlist, setWishlist] = useState<number[]>([]);
@@ -25,7 +25,7 @@ export default function StudentDashboard() {
   const [userCourse, setUserCourse] = useState('Computer Science');
 
   // Collaborative Recommendations
-  const [collabBooks, setCollabBooks] = useState(getCollaborativeRecommendations('1', 4, userCourse)); // Assuming '1' is John Student
+  const [collabBooks, setCollabBooks] = useState(getCollaborativeRecommendations('1', 4, userCourse));
 
   // Filter Values
   const [selectedGenre, setSelectedGenre] = useState('All');
@@ -34,9 +34,8 @@ export default function StudentDashboard() {
   const [inStockOnly, setInStockOnly] = useState(false);
   const [sortBy, setSortBy] = useState('Relevance');
 
-  // Update collaborative recommendations when course changes (simulating different peers)
+  // Update collaborative recommendations when course changes
   useEffect(() => {
-     // In a real app, this would depend on the user's actual history/profile
      setCollabBooks(getCollaborativeRecommendations('1', 4, userCourse));
   }, [userCourse]);
 
@@ -65,7 +64,7 @@ export default function StudentDashboard() {
   };
 
   const removeRecent = (term: string, e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent clicking the item
+    e.stopPropagation();
     const newRecent = recentSearches.filter(t => t !== term);
     setRecentSearches(newRecent);
     localStorage.setItem('recentSearches', JSON.stringify(newRecent));
@@ -258,7 +257,7 @@ export default function StudentDashboard() {
            </div>
         </div>
 
-        {/* === SEARCH & FILTER PANEL (Matches Screenshot) === */}
+        {/* === SEARCH & FILTER PANEL === */}
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 mb-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
           
           <div className="mb-6">
@@ -369,7 +368,6 @@ export default function StudentDashboard() {
 
                 {/* Column 2: Sliders */}
                 <div className="space-y-8">
-                   {/* Rating Slider (Yellow) */}
                    <div>
                       <div className="flex justify-between mb-3">
                         <label className="text-xs font-bold text-gray-700 uppercase tracking-wide">Min. Rating: {minRating}</label>
@@ -384,7 +382,6 @@ export default function StudentDashboard() {
                       />
                    </div>
                    
-                   {/* Year Slider (Red/Gray - replacing Price from screenshot for library context) */}
                    <div>
                       <div className="flex justify-between mb-3">
                         <label className="text-xs font-bold text-gray-700 uppercase tracking-wide">Max Year: {maxYear}</label>
@@ -435,7 +432,7 @@ export default function StudentDashboard() {
            </h2>
         </div>
 
-        {/* Book Grid */}
+        {/* === BOOK GRID WITH NEW DETAILS === */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
           {filteredBooks.map((book) => (
             <Link 
@@ -467,12 +464,24 @@ export default function StudentDashboard() {
                   <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded">{book.year}</span>
                 </div>
                 
-                <h3 className="font-bold text-gray-900 leading-tight mb-1 text-lg group-hover:text-usant-red transition-colors">{book.title}</h3>
-                <p className="text-sm text-gray-500 mb-4">{book.author}</p>
+                <h3 className="font-bold text-gray-900 leading-tight mb-1 text-lg group-hover:text-usant-red transition-colors line-clamp-2">{book.title}</h3>
+                <p className="text-sm text-gray-500 mb-3 truncate">{book.author}</p>
                 
-                <div className="mt-auto pt-4 border-t border-gray-100 flex justify-between items-center">
+                {/* NEW: Extra Details (Location & Course Tag) */}
+                <div className="flex flex-col gap-1.5 mb-4 mt-auto">
+                  <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                    <MapPin size={14} className="text-gray-400" />
+                    <span className="truncate">{book.location || 'Main Library - General'}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                    <GraduationCap size={14} className="text-gray-400" />
+                    <span className="truncate">{book.courses && book.courses.length > 0 ? book.courses.join(', ') : 'All Courses'}</span>
+                  </div>
+                </div>
+                
+                <div className="pt-4 border-t border-gray-100 flex justify-between items-center mt-auto">
                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-medium px-2 py-1 bg-gray-100 rounded text-gray-600">{book.genre}</span>
+                      <span className="text-xs font-medium px-2 py-1 bg-gray-100 rounded text-gray-600 truncate max-w-[80px]">{book.genre}</span>
                       <button 
                          onClick={(e) => handleToggleWishlist(e, book.id)}
                          className={`p-2 rounded-full hover:bg-gray-50 transition-all ${wishlist.includes(book.id) ? 'text-red-500' : 'text-gray-400'}`}
@@ -480,7 +489,7 @@ export default function StudentDashboard() {
                          <Heart size={18} className={wishlist.includes(book.id) ? 'fill-current' : ''} />
                       </button>
                    </div>
-                   <span className="text-xs font-bold text-usant-red group-hover:underline">View Details</span>
+                   <span className="text-xs font-bold text-usant-red group-hover:underline whitespace-nowrap">View Details</span>
                 </div>
               </div>
             </Link>
@@ -497,17 +506,16 @@ export default function StudentDashboard() {
             <button onClick={clearFilters} className="mt-6 px-6 py-2 bg-usant-red text-white font-medium rounded-lg hover:bg-red-800 transition">
               Clear All Filters
             </button>
-                    </div>
-                  )}
+          </div>
+        )}
           
-                  {/* Privacy & Security Note */}
-                  <div className="mt-16 flex items-center justify-center gap-2 text-gray-400">
-                     <ShieldCheck size={16} />
-                     <p className="text-xs font-medium">Your reading history and personal data are private and secure.</p>
-                  </div>
-          
-                </main>
-              </div>
-            );
-          }
-          
+        {/* Privacy & Security Note */}
+        <div className="mt-16 flex items-center justify-center gap-2 text-gray-400">
+           <ShieldCheck size={16} />
+           <p className="text-xs font-medium">Your reading history and personal data are private and secure.</p>
+        </div>
+  
+      </main>
+    </div>
+  );
+}

@@ -145,15 +145,13 @@ export default function AuthPage() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
                   <div className="relative">
-                    <select 
-                      value={role} 
+                    <select
+                      value={role}
                       onChange={(e) => handleRoleChange(e.target.value as UserRole)}
                       className="w-full px-3 py-2 rounded-lg bg-white border border-gray-200 focus:outline-none focus:ring-2 focus:ring-usant-red text-gray-900 appearance-none"
                     >
                       <option value="student">Student</option>
                       <option value="faculty">Faculty</option>
-                      <option value="staff">Staff</option>
-                      <option value="admin">Admin</option>
                     </select>
                      <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
@@ -161,24 +159,26 @@ export default function AuthPage() {
                   </div>
                 </div>
 
-                {/* User Type Dropdown */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">User Type</label>
-                  <div className="relative">
-                    <select 
-                      value={userType} 
-                      onChange={(e) => setUserType(e.target.value as UserType)}
-                      className="w-full px-3 py-2 rounded-lg bg-white border border-gray-200 focus:outline-none focus:ring-2 focus:ring-usant-red text-gray-900 appearance-none"
-                    >
-                      {userTypesByRole[role].map((type) => (
-                        <option key={type} value={type}>{type}</option>
-                      ))}
-                    </select>
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                {/* User Type Dropdown (Hidden for Students) */}
+                {role !== 'student' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">User Type</label>
+                    <div className="relative">
+                      <select
+                        value={userType}
+                        onChange={(e) => setUserType(e.target.value as UserType)}
+                        className="w-full px-3 py-2 rounded-lg bg-white border border-gray-200 focus:outline-none focus:ring-2 focus:ring-usant-red text-gray-900 appearance-none"
+                      >
+                        {userTypesByRole[role].map((type) => (
+                          <option key={type} value={type}>{type}</option>
+                        ))}
+                      </select>
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
               </div>
             )}
 
@@ -187,20 +187,67 @@ export default function AuthPage() {
               <div className="grid grid-cols-2 gap-4 animate-in slide-in-from-top-2 fade-in duration-300">
                 <div>
                    <label className="block text-sm font-medium text-gray-700 mb-1">Course</label>
-                   <select 
+                   <select
                       value={course}
                       onChange={(e) => setCourse(e.target.value)}
                       className="w-full px-3 py-2 rounded-lg bg-white border border-gray-200 focus:outline-none focus:ring-2 focus:ring-usant-red text-gray-900"
                    >
-                     <option>Computer Science</option>
-                     <option>Information Tech</option>
-                     <option>Engineering</option>
-                     <option>Education</option>
+                     <option value="">Select a course</option>
+                     {/* College of Information and Business Management */}
+                     <optgroup label="College of Information and Business Management">
+                       <option>Business Administration</option>
+                       <option>Hospitality Management</option>
+                       <option>Tourism Management</option>
+                       <option>Computer Science</option>
+                       <option>Library and Information Science</option>
+                       <option>Office Administration</option>
+                     </optgroup>
+                     {/* College of Accountancy */}
+                     <optgroup label="College of Accountancy">
+                       <option>Accountancy</option>
+                       <option>Accounting Information System</option>
+                       <option>Internal Auditing</option>
+                       <option>Management Accounting</option>
+                     </optgroup>
+                     {/* College of Engineering and Architecture */}
+                     <optgroup label="College of Engineering and Architecture">
+                       <option>Architecture</option>
+                       <option>Civil Engineering</option>
+                     </optgroup>
+                     {/* College of Maritime Education */}
+                     <optgroup label="College of Maritime Education">
+                       <option>Marine Transportation</option>
+                       <option>Marine Engineering</option>
+                     </optgroup>
+                     {/* College of Criminal Justice Education */}
+                     <optgroup label="College of Criminal Justice Education">
+                       <option>Criminology</option>
+                     </optgroup>
+                     {/* College of Health Care Education */}
+                     <optgroup label="College of Health Care Education">
+                       <option>Nursing</option>
+                     </optgroup>
+                     {/* College of Liberal Arts */}
+                     <optgroup label="College of Liberal Arts">
+                       <option>Psychology</option>
+                       <option>Communication</option>
+                       <option>English Language</option>
+                       <option>Political Science</option>
+                     </optgroup>
+                     {/* College of Teacher Education */}
+                     <optgroup label="College of Teacher Education">
+                       <option>Elementary Education</option>
+                       <option>Secondary Education</option>
+                       <option>Technology and Livelihood Education</option>
+                       <option>Early Childhood Education</option>
+                       <option>Physical Education</option>
+                       <option>Special Needs Education</option>
+                     </optgroup>
                    </select>
                 </div>
                 <div>
                    <label className="block text-sm font-medium text-gray-700 mb-1">Year Level</label>
-                   <select 
+                   <select
                       value={yearLevel}
                       onChange={(e) => setYearLevel(e.target.value)}
                       className="w-full px-3 py-2 rounded-lg bg-white border border-gray-200 focus:outline-none focus:ring-2 focus:ring-usant-red text-gray-900"
@@ -209,6 +256,7 @@ export default function AuthPage() {
                      <option>2nd Year</option>
                      <option>3rd Year</option>
                      <option>4th Year</option>
+                     <option>5th Year</option>
                    </select>
                 </div>
               </div>
