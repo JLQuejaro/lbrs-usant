@@ -1,8 +1,10 @@
 "use client";
 
 import Navbar from '@/app/components/Navbar';
-import { Book, Clock, Calendar, AlertCircle, CheckCircle, RotateCcw } from 'lucide-react';
+import { Book, Clock, Calendar, AlertCircle, CheckCircle, RotateCcw, ArrowLeft } from 'lucide-react';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 // Mock Data: Currently Borrowed Books
 const CURRENT_BORROWS = [
@@ -47,15 +49,34 @@ const HISTORY = [
 ];
 
 export default function MyShelfPage() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<'current' | 'history'>('current');
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar userName="John Student" userRole="Student" />
 
-      {/* Header Background */}
-      <div className="bg-gradient-to-r from-usant-red to-usant-orange h-48 w-full relative">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-white/10 to-transparent"></div>
+      {/* Hero Header */}
+      <div className="bg-gradient-to-r from-usant-red to-usant-orange pt-12 pb-24 px-8 overflow-hidden relative">
+        <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-white via-transparent to-transparent"></div>
+        <div className="max-w-7xl mx-auto relative z-10 text-center md:text-left">
+          <div className="flex items-center justify-center md:justify-start gap-4 mb-4">
+            <button 
+              onClick={() => router.back()} 
+              className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-full transition backdrop-blur-sm border border-white/20 cursor-pointer"
+              title="Go Back"
+            >
+              <ArrowLeft size={18} />
+            </button>
+            <Link href="/student#browse" className="text-white/80 hover:text-white transition font-bold text-sm">
+              Back to Browse
+            </Link>
+          </div>
+          <h1 className="text-4xl font-bold text-white mb-2">My Bookshelf</h1>
+          <p className="text-white/90 text-lg">
+            Manage your current borrows and view your reading history.
+          </p>
+        </div>
       </div>
 
       <main className="max-w-7xl mx-auto px-6 -mt-24 pb-12 relative z-10">

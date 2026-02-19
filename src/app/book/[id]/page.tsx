@@ -6,12 +6,13 @@ import BorrowModal from '@/app/components/BorrowModal'; // IMPORT THE MODAL
 import { Star, Clock, BookOpen, Calendar, ArrowLeft, Heart, Share2, MessageSquare, User as UserIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useState, useEffect } from 'react'; // IMPORT STATE
+import { useState, useEffect, use } from 'react'; // IMPORT STATE
 import { ALL_BOOKS, getReviewsByBookId, Book, Review } from '@/app/lib/mockData';
 
-export default function BookDetailsPage({ params }: { params: { id: string } }) {
+export default function BookDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
-  const bookId = parseInt(params.id);
+  const unwrappedParams = use(params);
+  const bookId = parseInt(unwrappedParams.id);
   const [book, setBook] = useState<Book | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [isBorrowModalOpen, setIsBorrowModalOpen] = useState(false); // STATE FOR MODAL
@@ -30,8 +31,22 @@ export default function BookDetailsPage({ params }: { params: { id: string } }) 
         <Navbar userName="John Student" userRole="Student" />
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
-             <h2 className="text-2xl font-bold text-gray-900 mb-2">Book Not Found</h2>
-             <Link href="/student" className="text-usant-red hover:underline font-bold">Back to Browse</Link>
+             <h2 className="text-2xl font-bold text-gray-900 mb-6">Book Not Found</h2>
+             <div className="flex items-center justify-center gap-4">
+                <button 
+                  onClick={() => router.back()} 
+                  className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-gray-200 text-gray-500 hover:text-usant-red hover:border-usant-red/30 hover:shadow-md transition-all cursor-pointer"
+                  title="Go Back"
+                >
+                  <ArrowLeft size={20} />
+                </button>
+                <Link 
+                  href="/student#browse" 
+                  className="text-usant-red hover:underline font-bold"
+                >
+                  Back to Browse
+                </Link>
+             </div>
           </div>
         </div>
       </div>
@@ -53,13 +68,22 @@ export default function BookDetailsPage({ params }: { params: { id: string } }) 
 
       <main className="max-w-6xl mx-auto px-6 py-10">
         
-        {/* Back Button */}
-        <button 
-          onClick={() => router.back()} 
-          className="flex items-center gap-2 text-gray-500 hover:text-usant-red transition mb-8 font-medium"
-        >
-          <ArrowLeft size={20} /> Back to Browse
-        </button>
+        {/* Back Navigation */}
+        <div className="flex items-center gap-4 mb-8">
+          <button 
+            onClick={() => router.back()} 
+            className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-gray-200 text-gray-500 hover:text-usant-red hover:border-usant-red/30 hover:shadow-md transition-all cursor-pointer"
+            title="Go Back"
+          >
+            <ArrowLeft size={20} />
+          </button>
+          <Link 
+            href="/student#browse" 
+            className="text-gray-500 hover:text-usant-red transition font-bold text-sm"
+          >
+            Back to Browse
+          </Link>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-12 gap-10">
           

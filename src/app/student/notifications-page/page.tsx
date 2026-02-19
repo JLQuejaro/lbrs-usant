@@ -3,10 +3,12 @@
 import Navbar from '@/app/components/Navbar';
 import { Bell, Clock, Calendar, BookOpen, ArrowLeft, MoreVertical, CheckCircle2, Info, AlertTriangle } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { MOCK_NOTIFICATIONS, Notification } from '@/app/lib/mockData';
 
 export default function NotificationsPage() {
+  const router = useRouter();
   const [notifications, setNotifications] = useState<Notification[]>(MOCK_NOTIFICATIONS);
 
   const markAllAsRead = () => {
@@ -35,11 +37,20 @@ export default function NotificationsPage() {
 
       {/* Hero Header */}
       <div className="bg-gradient-to-r from-usant-red to-usant-orange pt-12 pb-24 px-8 overflow-hidden">
-        <div className="max-w-7xl mx-auto text-center md:text-left">
-          <Link href="/student" className="inline-flex items-center gap-2 text-white/80 hover:text-white mb-4 transition">
-            <ArrowLeft size={20} /> Back to Browse
-          </Link>
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="max-w-7xl mx-auto text-center">
+          <div className="flex items-center justify-center gap-4 mb-4">
+            <button 
+              onClick={() => router.back()} 
+              className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-full transition backdrop-blur-sm border border-white/20 cursor-pointer"
+              title="Go Back"
+            >
+              <ArrowLeft size={18} />
+            </button>
+            <Link href="/student#browse" className="text-white/80 hover:text-white transition font-bold text-sm">
+              Back to Browse
+            </Link>
+          </div>
+          <div className="flex flex-col items-center justify-center gap-4">
             <div>
               <h1 className="text-4xl font-bold text-white mb-2">Notifications</h1>
               <p className="text-white/90 text-lg">

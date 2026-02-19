@@ -258,7 +258,7 @@ export default function StudentDashboard() {
         </div>
 
         {/* === SEARCH & FILTER PANEL === */}
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 mb-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div id="browse" className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 mb-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
           
           <div className="mb-6">
               <h2 className="text-3xl font-bold text-gray-900 mb-1">Search Books</h2>

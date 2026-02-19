@@ -3,10 +3,12 @@
 import Navbar from '@/app/components/Navbar';
 import { Star, Heart, ArrowLeft, Book as BookIcon, Trash2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ALL_BOOKS, getLocalWishlist, toggleLocalWishlist } from '@/app/lib/mockData';
 
 export default function WishlistPage() {
+  const router = useRouter();
   const [wishlistIds, setWishlistIds] = useState<number[]>([]);
   
   useEffect(() => {
@@ -27,9 +29,18 @@ export default function WishlistPage() {
       {/* Hero Header */}
       <div className="bg-gradient-to-r from-usant-red to-usant-orange pt-12 pb-24 px-8 overflow-hidden">
         <div className="max-w-7xl mx-auto text-center md:text-left">
-          <Link href="/student" className="inline-flex items-center gap-2 text-white/80 hover:text-white mb-4 transition">
-            <ArrowLeft size={20} /> Back to Browse
-          </Link>
+          <div className="flex items-center justify-center md:justify-start gap-4 mb-4">
+            <button 
+              onClick={() => router.back()} 
+              className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-full transition backdrop-blur-sm border border-white/20 cursor-pointer"
+              title="Go Back"
+            >
+              <ArrowLeft size={18} />
+            </button>
+            <Link href="/student#browse" className="text-white/80 hover:text-white transition font-bold text-sm">
+              Back to Browse
+            </Link>
+          </div>
           <h1 className="text-4xl font-bold text-white mb-2">My Wishlist</h1>
           <p className="text-white/90 text-lg">
             Books you've saved for later. We'll notify you when they become available.
