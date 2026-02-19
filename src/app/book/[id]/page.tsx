@@ -1,13 +1,12 @@
-// src/app/book/[id]/page.tsx
 "use client";
 
 import Navbar from '@/app/components/Navbar';
-import BorrowModal from '@/app/components/BorrowModal'; // IMPORT THE MODAL
 import { Star, Clock, BookOpen, Calendar, ArrowLeft, Heart, Share2, MessageSquare, User as UserIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useState, useEffect, use } from 'react'; // IMPORT STATE
-import { ALL_BOOKS, getReviewsByBookId, Book, Review } from '@/app/lib/mockData';
+import { useState, useEffect, use } from 'react';
+import { ALL_BOOKS, getReviewsByBookId, Book, Review, getLocalWishlist, toggleLocalWishlist, getLocalBorrows } from '@/app/lib/mockData';
+import BorrowModal from '@/app/components/BorrowModal';
 
 export default function BookDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
@@ -15,15 +14,29 @@ export default function BookDetailsPage({ params }: { params: Promise<{ id: stri
   const bookId = parseInt(unwrappedParams.id);
   const [book, setBook] = useState<Book | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
-  const [isBorrowModalOpen, setIsBorrowModalOpen] = useState(false); // STATE FOR MODAL
+  const [isInWishlist, setIsInWishlist] = useState(false);
+  const [isBorrowed, setIsBorrowed] = useState(false);
+  const [isBorrowModalOpen, setIsBorrowModalOpen] = useState(false);
 
   useEffect(() => {
     const foundBook = ALL_BOOKS.find(b => b.id === bookId);
     if (foundBook) {
       setBook(foundBook);
       setReviews(getReviewsByBookId(bookId));
+      setIsInWishlist(getLocalWishlist().includes(bookId));
+      setIsBorrowed(getLocalBorrows().some(b => b.id === bookId));
     }
   }, [bookId]);
+
+  const handleToggleWishlist = () => {
+    const newWishlist = toggleLocalWishlist(bookId);
+    setIsInWishlist(newWishlist.includes(bookId));
+  };
+
+  const handleModalClose = () => {
+    setIsBorrowModalOpen(false);
+    setIsBorrowed(getLocalBorrows().some(b => b.id === bookId));
+  };
 
   if (!book) {
     return (
@@ -62,7 +75,7 @@ export default function BookDetailsPage({ params }: { params: Promise<{ id: stri
       {/* MODAL COMPONENT */}
       <BorrowModal 
         isOpen={isBorrowModalOpen} 
-        onClose={() => setIsBorrowModalOpen(false)} 
+        onClose={handleModalClose} 
         bookTitle={book.title} 
         bookId={book.id}
       />
@@ -104,14 +117,28 @@ export default function BookDetailsPage({ params }: { params: Promise<{ id: stri
             <div className="space-y-3">
               <button 
                 onClick={() => setIsBorrowModalOpen(true)}
-                className="w-full bg-usant-red hover:bg-red-800 text-white font-bold py-3 rounded-lg shadow-lg shadow-red-100 transition flex items-center justify-center gap-2 transform active:scale-95 duration-100"
+                disabled={!book.stock || isBorrowed}
+                className={`w-full font-bold py-3 rounded-lg shadow-lg transition flex items-center justify-center gap-2 transform active:scale-95 duration-100 ${
+                  !book.stock || isBorrowed
+                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed shadow-none'
+                  : 'bg-usant-red hover:bg-red-800 text-white shadow-red-100'
+                }`}
               >
-                <BookOpen size={20} /> Borrow Now
+                <BookOpen size={20} /> 
+                {isBorrowed ? 'Already Borrowed' : !book.stock ? 'Out of Stock' : 'Borrow Now'}
               </button>
 
               <div className="grid grid-cols-2 gap-3">
-                 <button className="flex items-center justify-center gap-2 py-2.5 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium text-sm transition">
-                   <Heart size={18} /> Wishlist
+                 <button 
+                   onClick={handleToggleWishlist}
+                   className={`flex items-center justify-center gap-2 py-2.5 rounded-lg border font-medium text-sm transition ${
+                     isInWishlist 
+                     ? 'bg-red-50 border-red-200 text-usant-red' 
+                     : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                   }`}
+                 >
+                   <Heart size={18} className={isInWishlist ? 'fill-current' : ''} />
+                   {isInWishlist ? 'Saved' : 'Wishlist'}
                  </button>
                  <button className="flex items-center justify-center gap-2 py-2.5 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium text-sm transition">
                    <Share2 size={18} /> Share
@@ -125,8 +152,9 @@ export default function BookDetailsPage({ params }: { params: Promise<{ id: stri
              <div className="mb-6">
               <div className="flex items-center gap-2 mb-2">
                  <span className="px-3 py-1 bg-red-50 text-usant-red text-xs font-bold uppercase tracking-wider rounded-full">{book.genre}</span>
-                 <span className={`px-3 py-1 text-xs font-bold uppercase tracking-wider rounded-full flex items-center gap-1 ${book.stock ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
-                   <span className={`w-2 h-2 rounded-full ${book.stock ? 'bg-green-500' : 'bg-red-500'}`}></span> {book.stock ? 'Available' : 'Out of Stock'}
+                 <span className={`px-3 py-1 text-xs font-bold uppercase tracking-wider rounded-full flex items-center gap-1 ${(!book.stock || isBorrowed) ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'}`}>
+                   <span className={`w-2 h-2 rounded-full ${(!book.stock || isBorrowed) ? 'bg-red-500' : 'bg-green-500'}`}></span> 
+                   {isBorrowed ? 'Currently with you' : !book.stock ? 'Out of Stock' : 'Available'}
                  </span>
               </div>
               <h1 className="text-4xl font-bold text-gray-900 mb-2">{book.title}</h1>

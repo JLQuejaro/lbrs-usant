@@ -142,11 +142,13 @@ export default function BorrowModal({ isOpen, onClose, bookTitle, bookId }: Borr
               </div>
             </div>
 
+            {/* UPDATED BACK BUTTON */}
             <button 
               onClick={handleClose}
-              className="w-full mt-6 bg-gray-900 hover:bg-black text-white font-bold py-3 rounded-xl transition shadow-lg flex items-center justify-center gap-2"
+              className="w-full mt-6 bg-usant-red hover:bg-red-800 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-red-100 flex items-center justify-center gap-2"
             >
-              Close Receipt
+              <ArrowLeft size={18} />
+              Back to Book Details
             </button>
           </div>
         </div>
