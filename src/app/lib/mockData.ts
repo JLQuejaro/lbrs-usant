@@ -58,6 +58,7 @@ export interface Book {
   dateAdded: string; // For New Acquisitions
   borrowCount: number; // For Analytics
   views: number; // For Analytics
+  featured?: boolean; // For Featured Materials
 }
 
 export interface Journal {
@@ -113,6 +114,8 @@ export const MOCK_USERS: User[] = [
   { id: '4', name: 'Charlie Davis', email: 'charlie@usant.edu', role: 'student', userType: 'Undergraduate Student', course: 'Computer Science' },
   { id: '5', name: 'Diana Prince', email: 'diana@usant.edu', role: 'student', userType: 'Undergraduate Student', course: 'Engineering' },
   { id: '6', name: 'Dr. Robert Johnson', email: 'rob@usant.edu', role: 'faculty', userType: 'Professor', department: 'Computer Science' },
+  { id: '7', name: 'Maria Santos', email: 'maria@usant.edu', role: 'staff', userType: 'Librarian' },
+  { id: '8', name: 'Admin User', email: 'admin@usant.edu', role: 'admin', userType: 'System Administrator' },
 ];
 
 // 3. Mock Books
@@ -121,12 +124,12 @@ export const ALL_BOOKS: Book[] = [
   { 
     id: 1, title: 'Introduction to Algorithms', author: 'Thomas H. Cormen', genre: 'Computer Science', color: 'bg-red-900', rating: 4.8, year: 2009, stock: true, courses: ['Computer Science'],
     description: "This title covers a broad range of algorithms in depth, yet makes their design and analysis accessible to all levels of readers.", pages: 1312, status: 'Available', reviewCount: 124,
-    dateAdded: '2023-01-15', borrowCount: 156, views: 1200
+    dateAdded: '2023-01-15', borrowCount: 156, views: 1200, featured: true
   },
   { 
     id: 2, title: 'Clean Code', author: 'Robert C. Martin', genre: 'Software Engineering', color: 'bg-blue-800', rating: 4.9, year: 2008, stock: true, courses: ['Computer Science', 'Information Tech'],
     description: "Even bad code can function. But if code isn't clean, it can bring a development organization to its knees.", pages: 464, status: 'Available', reviewCount: 89,
-    dateAdded: '2023-02-20', borrowCount: 210, views: 1500
+    dateAdded: '2023-02-20', borrowCount: 210, views: 1500, featured: true
   },
   { 
     id: 3, title: 'The Pragmatic Programmer', author: 'Andrew Hunt', genre: 'Software Engineering', color: 'bg-slate-700', rating: 4.7, year: 1999, stock: false, courses: ['Computer Science', 'Information Tech'],

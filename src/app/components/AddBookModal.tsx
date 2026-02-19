@@ -26,7 +26,14 @@ export default function AddBookModal({ isOpen, onClose, onSave }: AddBookModalPr
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave({ ...formData, id: Date.now() }); // Create a temp ID
+    onSave({ 
+      ...formData, 
+      id: Date.now(), 
+      featured: false,
+      borrowCount: 0,
+      views: 0,
+      dateAdded: new Date().toISOString().split('T')[0]
+    }); // Create a temp ID
     onClose();
     // Reset form
     setFormData({ 
