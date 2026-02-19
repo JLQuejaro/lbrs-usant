@@ -211,3 +211,44 @@ export function toggleLocalWishlist(bookId: number): number[] {
 export function getReviewsByBookId(bookId: number): Review[] {
   return MOCK_REVIEWS.filter(r => r.bookId === bookId);
 }
+
+// Local Storage Helpers for Borrowing
+export interface LocalBorrow {
+  id: number;
+  borrowedDate: string;
+  dueDate: string;
+}
+
+export function getLocalBorrows(): LocalBorrow[] {
+  if (typeof window === 'undefined') return [];
+  const saved = localStorage.getItem('borrows');
+  return saved ? JSON.parse(saved) : [];
+}
+
+export function borrowBook(bookId: number): LocalBorrow[] {
+  if (typeof window === 'undefined') return [];
+  const borrows = getLocalBorrows();
+  if (borrows.some(b => b.id === bookId)) return borrows;
+
+  const today = new Date();
+  const dueDate = new Date(today);
+  dueDate.setDate(today.getDate() + 7);
+
+  const newBorrow: LocalBorrow = {
+    id: bookId,
+    borrowedDate: today.toISOString(),
+    dueDate: dueDate.toISOString(),
+  };
+
+  const newBorrows = [...borrows, newBorrow];
+  localStorage.setItem('borrows', JSON.stringify(newBorrows));
+  return newBorrows;
+}
+
+export function returnBook(bookId: number): LocalBorrow[] {
+  if (typeof window === 'undefined') return [];
+  const borrows = getLocalBorrows();
+  const newBorrows = borrows.filter(b => b.id !== bookId);
+  localStorage.setItem('borrows', JSON.stringify(newBorrows));
+  return newBorrows;
+}

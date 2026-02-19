@@ -4,7 +4,7 @@ import Navbar from '@/app/components/Navbar';
 import { Book, Layers, Search, Clock, Star, SlidersHorizontal, RotateCcw, X, History, Sparkles, ChevronDown, Users, Heart, Bell, Library, ShieldCheck, MapPin, GraduationCap } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ALL_BOOKS, getCollaborativeRecommendations, getLocalWishlist, toggleLocalWishlist, MOCK_NOTIFICATIONS } from '@/app/lib/mockData';
+import { ALL_BOOKS, getCollaborativeRecommendations, getLocalWishlist, toggleLocalWishlist, MOCK_NOTIFICATIONS, getLocalBorrows } from '@/app/lib/mockData';
 
 const GENRES = ['All', 'Computer Science', 'Software Engineering', 'Fiction', 'History', 'Finance', 'Self-Help', 'Engineering', 'Education', 'Psychology'];
 const COURSES = ['Computer Science', 'Information Tech', 'Engineering', 'Education'];
@@ -16,6 +16,7 @@ export default function StudentDashboard() {
   // Wishlist & Notification Stats
   const [wishlist, setWishlist] = useState<number[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [borrowCount, setBorrowCount] = useState(0);
 
   // Recent Search State
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
@@ -47,6 +48,7 @@ export default function StudentDashboard() {
     }
     setWishlist(getLocalWishlist());
     setUnreadCount(MOCK_NOTIFICATIONS.filter(n => !n.read).length);
+    setBorrowCount(getLocalBorrows().length);
   }, []);
 
   const handleToggleWishlist = (e: React.MouseEvent, bookId: number) => {
@@ -152,7 +154,7 @@ export default function StudentDashboard() {
               </div>
               <div>
                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">My Shelf</p>
-                 <p className="text-2xl font-black text-gray-900">3 <span className="text-sm font-medium text-gray-500">Active Borrows</span></p>
+                 <p className="text-2xl font-black text-gray-900">{borrowCount} <span className="text-sm font-medium text-gray-500">Active Borrows</span></p>
               </div>
            </Link>
         </div>

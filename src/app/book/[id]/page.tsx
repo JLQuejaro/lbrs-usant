@@ -64,6 +64,7 @@ export default function BookDetailsPage({ params }: { params: Promise<{ id: stri
         isOpen={isBorrowModalOpen} 
         onClose={() => setIsBorrowModalOpen(false)} 
         bookTitle={book.title} 
+        bookId={book.id}
       />
 
       <main className="max-w-6xl mx-auto px-6 py-10">

@@ -1,32 +1,11 @@
 "use client";
 
 import Navbar from '@/app/components/Navbar';
-import { Book, Clock, Calendar, AlertCircle, CheckCircle, RotateCcw, ArrowLeft } from 'lucide-react';
-import { useState } from 'react';
+import { Book as BookIcon, Clock, Calendar, AlertCircle, CheckCircle, RotateCcw, ArrowLeft, Loader2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-
-// Mock Data: Currently Borrowed Books
-const CURRENT_BORROWS = [
-  { 
-    id: 1, 
-    title: 'Introduction to Algorithms', 
-    author: 'Thomas H. Cormen', 
-    borrowedDate: 'Feb 1, 2026', 
-    dueDate: 'Feb 8, 2026', 
-    status: 'Due Soon', // Status: On Time, Due Soon, Overdue
-    coverColor: 'bg-red-900' 
-  },
-  { 
-    id: 2, 
-    title: 'Clean Code', 
-    author: 'Robert C. Martin', 
-    borrowedDate: 'Jan 28, 2026', 
-    dueDate: 'Feb 4, 2026', 
-    status: 'Overdue', 
-    coverColor: 'bg-blue-800' 
-  }
-];
+import { getLocalBorrows, returnBook, ALL_BOOKS, LocalBorrow } from '@/app/lib/mockData';
 
 // Mock Data: Past History
 const HISTORY = [
@@ -51,6 +30,27 @@ const HISTORY = [
 export default function MyShelfPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'current' | 'history'>('current');
+  const [borrows, setBorrows] = useState<LocalBorrow[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    setBorrows(getLocalBorrows());
+    setIsLoading(false);
+  }, []);
+
+  const handleReturn = (id: number) => {
+    const updated = returnBook(id);
+    setBorrows(updated);
+  };
+
+  const borrowedBooks = borrows.map(b => {
+    const bookInfo = ALL_BOOKS.find(book => book.id === b.id);
+    return {
+      ...b,
+      ...bookInfo,
+      status: new Date(b.dueDate) < new Date() ? 'Overdue' : 'Active'
+    };
+  });
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -106,7 +106,7 @@ export default function MyShelfPage() {
                 <div className="border-t border-gray-100 pt-4 grid grid-cols-2 gap-4 text-left">
                    <div>
                      <span className="block text-xs text-gray-400 uppercase font-bold">Books Out</span>
-                     <span className="block text-lg font-bold text-gray-900">{CURRENT_BORROWS.length}</span>
+                     <span className="block text-lg font-bold text-gray-900">{borrows.length}</span>
                    </div>
                    <div>
                      <span className="block text-xs text-gray-400 uppercase font-bold">Fines</span>
@@ -131,7 +131,7 @@ export default function MyShelfPage() {
                         : 'border-transparent text-gray-500 hover:text-gray-700'
                     }`}
                   >
-                    Current Borrows ({CURRENT_BORROWS.length})
+                    Current Borrows ({borrows.length})
                   </button>
                   <button 
                     onClick={() => setActiveTab('history')}
@@ -150,10 +150,14 @@ export default function MyShelfPage() {
                   
                   {activeTab === 'current' && (
                     <div className="space-y-4">
-                      {CURRENT_BORROWS.map((book) => (
+                      {isLoading ? (
+                        <div className="flex justify-center py-20">
+                          <Loader2 size={32} className="text-usant-red animate-spin" />
+                        </div>
+                      ) : borrowedBooks.length > 0 ? borrowedBooks.map((book) => (
                         <div key={book.id} className="flex flex-col sm:flex-row gap-4 p-4 rounded-xl border border-gray-100 hover:shadow-md transition bg-white group">
                            {/* Tiny Cover */}
-                           <div className={`w-16 h-24 sm:w-20 sm:h-28 ${book.coverColor} rounded-md shadow-sm flex-shrink-0`}></div>
+                           <div className={`w-16 h-24 sm:w-20 sm:h-28 ${book.color || 'bg-gray-200'} rounded-md shadow-sm flex-shrink-0`}></div>
                            
                            <div className="flex-1">
                              <h3 className="font-bold text-lg text-gray-900">{book.title}</h3>
@@ -162,13 +166,13 @@ export default function MyShelfPage() {
                              <div className="flex flex-wrap gap-4 text-sm">
                                <div className="flex items-center gap-2 text-gray-600">
                                   <Calendar size={16} className="text-gray-400" /> 
-                                  <span>Borrowed: {book.borrowedDate}</span>
+                                  <span>Borrowed: {new Date(book.borrowedDate!).toLocaleDateString()}</span>
                                </div>
                                <div className={`flex items-center gap-2 font-medium ${
                                    book.status === 'Overdue' ? 'text-red-600' : 'text-orange-600'
                                }`}>
                                   <Clock size={16} /> 
-                                  <span>Due: {book.dueDate}</span>
+                                  <span>Due: {new Date(book.dueDate!).toLocaleDateString()}</span>
                                </div>
                              </div>
                            </div>
@@ -180,12 +184,24 @@ export default function MyShelfPage() {
                               }`}>
                                 {book.status}
                               </span>
-                              <button className="text-sm font-medium text-usant-red hover:underline flex items-center gap-1">
+                              <button 
+                                onClick={() => handleReturn(book.id!)}
+                                className="text-sm font-medium text-usant-red hover:underline flex items-center gap-1"
+                              >
                                 <RotateCcw size={14} /> Return
                               </button>
                            </div>
                         </div>
-                      ))}
+                      )) : (
+                        <div className="text-center py-20">
+                           <BookIcon size={48} className="text-gray-200 mx-auto mb-4" />
+                           <h3 className="text-lg font-bold text-gray-900">Your shelf is empty</h3>
+                           <p className="text-gray-500 mb-6">Explore the library and start borrowing books!</p>
+                           <Link href="/student#browse" className="bg-usant-red text-white px-6 py-2 rounded-lg font-bold hover:bg-red-800 transition">
+                              Browse Books
+                           </Link>
+                        </div>
+                      )}
                     </div>
                   )}
 
