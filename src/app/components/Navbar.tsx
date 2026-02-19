@@ -5,7 +5,9 @@ import { LogOut, User, Library, Heart, Bell } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { MOCK_NOTIFICATIONS } from '@/app/lib/mockData';
+import LogoutConfirmationCard from './LogoutConfirmationCard';
 
 interface NavbarProps {
   userName: string;
@@ -14,6 +16,10 @@ interface NavbarProps {
 
 export default function Navbar({ userName, userRole }: NavbarProps) {
   const [unreadCount, setUnreadCount] = useState(0);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [logoutText, setLogoutText] = useState("Logout");
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     // In a real app, this would fetch from an API
@@ -27,6 +33,29 @@ export default function Navbar({ userName, userRole }: NavbarProps) {
     if (userRole === 'Librarian' || userRole === 'Staff') return '/librarian';
     if (userRole === 'Admin') return '/admin';
     return '/';
+  };
+
+  const handleLogout = () => {
+    setShowLogoutConfirm(true);
+  };
+
+  const confirmLogout = () => {
+    const slogans = [
+      "See you soon, USANTian!",
+      "Knowledge is power. Back soon!",
+      "Keep on reading!",
+      "Success starts with a book!",
+      "The library misses you already!"
+    ];
+    
+    setIsLoggingOut(true);
+    setLogoutText(slogans[Math.floor(Math.random() * slogans.length)]);
+    setShowLogoutConfirm(false);
+    
+    // Simulate a brief delay for the "catchy" logout experience
+    setTimeout(() => {
+      router.push('/');
+    }, 1500);
   };
 
   return (
@@ -84,12 +113,31 @@ export default function Navbar({ userName, userRole }: NavbarProps) {
           </div>
           
           {/* Logout Button */}
-          <Link href="/" className="flex items-center gap-2 text-sm font-bold opacity-90 hover:opacity-100 transition hover:bg-white/10 px-3 py-2 rounded-lg">
-            <LogOut size={18} />
-            <span className="hidden sm:inline">Logout</span>
-          </Link>
+          <button 
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+            className="flex items-center gap-2 text-sm font-bold opacity-90 hover:opacity-100 transition hover:bg-white/10 px-3 py-2 rounded-lg cursor-pointer disabled:opacity-50"
+          >
+            {isLoggingOut ? (
+              <span className="animate-pulse flex items-center gap-2">
+                {logoutText}
+              </span>
+            ) : (
+              <>
+                <LogOut size={18} />
+                <span className="hidden sm:inline">Logout</span>
+              </>
+            )}
+          </button>
         </div>
       </div>
+
+      <LogoutConfirmationCard
+        isOpen={showLogoutConfirm}
+        onConfirm={confirmLogout}
+        onCancel={() => setShowLogoutConfirm(false)}
+        isLoading={isLoggingOut}
+      />
     </nav>
   );
 }
