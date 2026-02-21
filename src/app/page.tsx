@@ -363,6 +363,42 @@ export default function AuthPage() {
              </p>
           </div>
 
+          {/* Demo Access (Development Only) */}
+          {!isRegistering && (
+            <div className="mt-6 pt-6 border-t border-gray-100">
+              <p className="text-center text-xs text-gray-400 mb-3 font-bold uppercase tracking-wider">Demo Access (Development)</p>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => { setEmail('admin@usant.edu'); setPassword('admin123'); }}
+                  className="text-xs py-2 px-3 border border-gray-300 rounded hover:bg-gray-50 transition"
+                >
+                  👤 Admin
+                </button>
+                <button
+                  onClick={() => { setEmail('john@usant.edu'); setPassword('student123'); }}
+                  className="text-xs py-2 px-3 border border-gray-300 rounded hover:bg-gray-50 transition"
+                >
+                  📚 Student
+                </button>
+                <button
+                  onClick={() => { setEmail('rob@usant.edu'); setPassword('faculty123'); }}
+                  className="text-xs py-2 px-3 border border-gray-300 rounded hover:bg-gray-50 transition"
+                >
+                  🎓 Faculty
+                </button>
+                <button
+                  onClick={() => { setEmail('maria@usant.edu'); setPassword('librarian123'); }}
+                  className="text-xs py-2 px-3 border border-gray-300 rounded hover:bg-gray-50 transition"
+                >
+                  📖 Librarian
+                </button>
+              </div>
+              <p className="text-[10px] text-gray-400 text-center mt-2">
+                Click a role to auto-fill credentials, then click Sign In
+              </p>
+            </div>
+          )}
+
         </div>
       </div>
     </div>

@@ -50,18 +50,26 @@ export async function POST(request: NextRequest) {
     }
     
     // Verify password
-    // Note: For initial mock users without hashed passwords, we'll allow a fallback
-    // In production, all passwords should be hashed
+    // For development/demo accounts with known passwords
+    const demoPasswords: Record<string, string> = {
+      'admin@usant.edu': 'admin123',
+      'john@usant.edu': 'student123',
+      'rob@usant.edu': 'faculty123',
+      'maria@usant.edu': 'librarian123',
+    };
+
     let isValidPassword = false;
-    
-    if (user.password_hash && user.password_hash.startsWith('$2b$')) {
+
+    // Check if it's a demo account
+    if (demoPasswords[email]) {
+      isValidPassword = password === demoPasswords[email];
+    } else if (user.password_hash && user.password_hash.startsWith('$2b$')) {
       // Password is hashed, verify it
       isValidPassword = await verifyPassword(password, user.password_hash);
     } else {
-      // Fallback for mock data (in development only)
-      // This allows login with any password for users without hashed passwords
+      // Fallback for mock data without hashed passwords (development only)
       console.warn('Development mode: Using fallback authentication for user without hashed password');
-      isValidPassword = true; // In dev, accept any password for users without hash
+      isValidPassword = true;
     }
     
     if (!isValidPassword) {

@@ -12,7 +12,7 @@
 
 INSERT INTO users (user_id, username, email, password_hash, role, user_type_admin, approval_status, is_active)
 VALUES 
-    ('00000000-0000-0000-0000-000000000008', 'Admin User', 'admin@usant.edu', '$2b$10$placeholder_hash', 'admin', 'System Administrator', 'approved', true);
+    ('00000000-0000-0000-0000-000000000008', 'Admin User', 'admin@usant.edu', '$2b$10$rHk9zX5vK8mN2pQ7wY3tLe4fG6hJ8iK0mO1nP2qR3sT4uV5wX6yZ7', 'admin', 'System Administrator', 'approved', true);
 
 -- ============================================================
 -- SEED: Students
