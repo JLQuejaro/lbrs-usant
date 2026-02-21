@@ -120,12 +120,6 @@ export default function AuthPage() {
     }
   };
 
-  const quickLogin = (e: string) => {
-    setEmail(e);
-    // For demo purposes, we'll use a simple password
-    setPassword('password123');
-  };
-
   return (
     <div className="flex min-h-screen w-full bg-gradient-to-br from-usant-red to-usant-orange">
 
@@ -180,7 +174,7 @@ export default function AuthPage() {
                 <input
                   required
                   type="text"
-                  placeholder="John Doe"
+                  placeholder="Jericho Ramos"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-200 focus:ring-2 focus:ring-usant-red focus:outline-none transition-all"
@@ -193,7 +187,7 @@ export default function AuthPage() {
               <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
               <input
                 type="email"
-                placeholder="you@usant.edu"
+                placeholder="you@gmail.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-200 focus:ring-2 focus:ring-usant-red focus:outline-none transition-all"
@@ -366,19 +360,6 @@ export default function AuthPage() {
                 </button>
              </p>
           </div>
-
-          {/* Quick Demo Login (Only Show in Login Mode) */}
-          {!isRegistering && (
-             <div className="mt-6 pt-4 border-t border-gray-100">
-                <p className="text-center text-xs text-gray-400 mb-4">Quick Demo Login:</p>
-                <div className="grid grid-cols-4 gap-2">
-                  <button onClick={() => quickLogin('john@usant.edu')} className="text-[10px] py-1 border rounded text-usant-red border-usant-red hover:bg-red-50">Student</button>
-                  <button onClick={() => quickLogin('rob@usant.edu')} className="text-[10px] py-1 border rounded text-orange-600 border-orange-600 hover:bg-orange-50">Faculty</button>
-                  <button onClick={() => quickLogin('maria@usant.edu')} className="text-[10px] py-1 border rounded text-gray-600 border-gray-600 hover:bg-gray-50">Librarian</button>
-                  <button onClick={() => quickLogin('admin@usant.edu')} className="text-[10px] py-1 border rounded text-gray-600 border-gray-600 hover:bg-gray-50">Admin</button>
-                </div>
-             </div>
-          )}
 
         </div>
       </div>
