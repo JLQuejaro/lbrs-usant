@@ -9,16 +9,13 @@ import { useRouter } from 'next/navigation';
 export default function AuthPage() {
   const router = useRouter();
   
-  // 1. State to toggle between "login" and "register" views
   const [isRegistering, setIsRegistering] = useState(false);
 
-  // Form States
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<UserRole>('student');
   const [userType, setUserType] = useState<UserType>(userTypesByRole['student'][0]);
   
-  // Registration Specific States
   const [fullName, setFullName] = useState('');
   const [course, setCourse] = useState('Computer Science');
   const [yearLevel, setYearLevel] = useState('1st Year');
@@ -42,13 +39,10 @@ export default function AuthPage() {
   const handleAuthAction = (e: React.FormEvent) => {
     e.preventDefault();
     if (isRegistering) {
-      // Simulate Registration
       alert(`Account created for ${fullName}!`);
-      setIsRegistering(false); // Switch back to login after registering
+      setIsRegistering(false);
     } else {
-      // Handle Login Routing
       const user = MOCK_USERS.find(u => u.email === email);
-      
       if (user) {
         if (user.role === 'admin') router.push('/admin');
         else if (user.role === 'staff' && user.userType === 'Librarian') router.push('/librarian');
@@ -58,6 +52,11 @@ export default function AuthPage() {
         alert("Invalid email or password (try the demo buttons below!)");
       }
     }
+  };
+
+  const handleGoogleAuth = () => {
+    // TODO: Replace with your Google OAuth provider call e.g. signIn('google')
+    alert('Google OAuth coming soon!');
   };
 
   return (
@@ -88,7 +87,6 @@ export default function AuthPage() {
       <div className="flex-1 flex items-center justify-center p-8 overflow-y-auto">
         <div className="bg-white w-full max-w-md p-10 rounded-2xl shadow-2xl border border-white/50 animate-in fade-in zoom-in duration-300">
           
-          {/* Header toggles based on mode */}
           <div className="text-center mb-8">
             <h2 className="text-3xl font-bold text-usant-red mb-2">
               {isRegistering ? 'Create Account' : 'Welcome Back'}
@@ -100,7 +98,6 @@ export default function AuthPage() {
 
           <form onSubmit={handleAuthAction} className="space-y-4">
             
-            {/* REGISTER ONLY: Full Name */}
             {isRegistering && (
               <div className="animate-in slide-in-from-top-2 fade-in duration-300">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
@@ -115,7 +112,6 @@ export default function AuthPage() {
               </div>
             )}
 
-            {/* Email (Common) */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
               <input 
@@ -127,7 +123,6 @@ export default function AuthPage() {
               />
             </div>
 
-            {/* Password (Common) */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
               <input 
@@ -141,7 +136,6 @@ export default function AuthPage() {
 
             {isRegistering && (
               <div className="grid grid-cols-2 gap-4 animate-in slide-in-from-top-2 fade-in duration-300">
-                {/* Role Dropdown */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
                   <div className="relative">
@@ -153,13 +147,12 @@ export default function AuthPage() {
                       <option value="student">Student</option>
                       <option value="faculty">Faculty</option>
                     </select>
-                     <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
                     </div>
                   </div>
                 </div>
 
-                {/* User Type Dropdown (Hidden for Students) */}
                 {role !== 'student' && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">User Type</label>
@@ -182,7 +175,6 @@ export default function AuthPage() {
               </div>
             )}
 
-            {/* REGISTER ONLY: Course & Year (Only for Students) */}
             {isRegistering && role === 'student' && (
               <div className="grid grid-cols-2 gap-4 animate-in slide-in-from-top-2 fade-in duration-300">
                 <div>
@@ -193,7 +185,6 @@ export default function AuthPage() {
                       className="w-full px-3 py-2 rounded-lg bg-white border border-gray-200 focus:outline-none focus:ring-2 focus:ring-usant-red text-gray-900"
                    >
                      <option value="">Select a course</option>
-                     {/* College of Information and Business Management */}
                      <optgroup label="College of Information and Business Management">
                        <option>Business Administration</option>
                        <option>Hospitality Management</option>
@@ -202,39 +193,32 @@ export default function AuthPage() {
                        <option>Library and Information Science</option>
                        <option>Office Administration</option>
                      </optgroup>
-                     {/* College of Accountancy */}
                      <optgroup label="College of Accountancy">
                        <option>Accountancy</option>
                        <option>Accounting Information System</option>
                        <option>Internal Auditing</option>
                        <option>Management Accounting</option>
                      </optgroup>
-                     {/* College of Engineering and Architecture */}
                      <optgroup label="College of Engineering and Architecture">
                        <option>Architecture</option>
                        <option>Civil Engineering</option>
                      </optgroup>
-                     {/* College of Maritime Education */}
                      <optgroup label="College of Maritime Education">
                        <option>Marine Transportation</option>
                        <option>Marine Engineering</option>
                      </optgroup>
-                     {/* College of Criminal Justice Education */}
                      <optgroup label="College of Criminal Justice Education">
                        <option>Criminology</option>
                      </optgroup>
-                     {/* College of Health Care Education */}
                      <optgroup label="College of Health Care Education">
                        <option>Nursing</option>
                      </optgroup>
-                     {/* College of Liberal Arts */}
                      <optgroup label="College of Liberal Arts">
                        <option>Psychology</option>
                        <option>Communication</option>
                        <option>English Language</option>
                        <option>Political Science</option>
                      </optgroup>
-                     {/* College of Teacher Education */}
                      <optgroup label="College of Teacher Education">
                        <option>Elementary Education</option>
                        <option>Secondary Education</option>
@@ -270,6 +254,29 @@ export default function AuthPage() {
                  <>Sign In <ArrowRight size={18} /></>
               )}
             </button>
+
+            {/* OR Divider */}
+            <div className="flex items-center gap-3 mt-2">
+              <div className="flex-1 h-px bg-gray-200" />
+              <span className="text-xs text-gray-400">or</span>
+              <div className="flex-1 h-px bg-gray-200" />
+            </div>
+
+            {/* Continue with Google */}
+            <button
+              type="button"
+              onClick={handleGoogleAuth}
+              className="w-full flex items-center justify-center gap-3 border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 font-medium py-3 rounded-lg transition-colors shadow-sm"
+            >
+              <svg width="18" height="18" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+                <path d="M43.611 20.083H42V20H24v8h11.303C33.653 32.773 29.28 36 24 36c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z" fill="#FFC107"/>
+                <path d="M6.306 14.691l6.571 4.819C14.655 15.108 19.001 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z" fill="#FF3D00"/>
+                <path d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0124 36c-5.259 0-9.608-3.299-11.285-7.935l-6.522 5.025C9.505 39.556 16.227 44 24 44z" fill="#4CAF50"/>
+                <path d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 01-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z" fill="#1976D2"/>
+              </svg>
+              Continue with Google
+            </button>
+
           </form>
 
           {/* Toggle Link */}

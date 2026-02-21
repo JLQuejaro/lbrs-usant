@@ -72,29 +72,33 @@ export default function Navbar({ userName, userRole }: NavbarProps) {
         </Link>
 
         {/* Center Links */}
-        {(userRole === 'Student' || userRole === 'Faculty') && (
+        {userRole === 'Student' && (
           <div className="hidden md:flex items-center gap-6 text-sm font-medium">
-            <Link href={getDashboardLink()} className="opacity-90 hover:opacity-100 hover:text-white transition">
+            <Link href="/student" className="opacity-90 hover:opacity-100 hover:text-white transition">
               Browse
             </Link>
             <Link href="/student/shelf" className="opacity-90 hover:opacity-100 hover:text-white transition flex items-center gap-2">
               <Library size={16} /> My Shelf
             </Link>
-            {userRole === 'Student' && (
-              <>
-                <Link href="/student/wishlist-page" className="opacity-90 hover:opacity-100 hover:text-white transition flex items-center gap-2">
-                  <Heart size={16} /> Wishlist
-                </Link>
-                <Link href="/student/notifications-page" className="relative opacity-90 hover:opacity-100 hover:text-white transition flex items-center gap-2">
-                  <Bell size={16} /> Notifications
-                  {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-white text-usant-red text-[8px] font-bold w-3.5 h-3.5 flex items-center justify-center rounded-full shadow-sm">
-                      {unreadCount}
-                    </span>
-                  )}
-                </Link>
-              </>
-            )}
+            <Link href="/student/wishlist-page" className="opacity-90 hover:opacity-100 hover:text-white transition flex items-center gap-2">
+              <Heart size={16} /> Wishlist
+            </Link>
+            <Link href="/student/notifications-page" className="relative opacity-90 hover:opacity-100 hover:text-white transition flex items-center gap-2">
+              <Bell size={16} /> Notifications
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-white text-usant-red text-[8px] font-bold w-3.5 h-3.5 flex items-center justify-center rounded-full shadow-sm">
+                  {unreadCount}
+                </span>
+              )}
+            </Link>
+          </div>
+        )}
+
+        {userRole === 'Faculty' && (
+          <div className="hidden md:flex items-center gap-6 text-sm font-medium">
+            <Link href="/faculty" className="opacity-90 hover:opacity-100 hover:text-white transition">
+              Browse
+            </Link>
           </div>
         )}
 
