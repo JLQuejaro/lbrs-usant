@@ -21,7 +21,7 @@ export default function AdminPanel() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar userName="Admin User" userRole="System Administrator" />
+      <Navbar />
 
       <main className="max-w-7xl mx-auto px-8 py-10">
 

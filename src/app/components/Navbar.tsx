@@ -8,18 +8,19 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { MOCK_NOTIFICATIONS } from '@/app/lib/mockData';
 import LogoutConfirmationCard from './LogoutConfirmationCard';
+import { useAuth } from '@/app/contexts/AuthContext';
 
-interface NavbarProps {
-  userName: string;
-  userRole: string;
-}
-
-export default function Navbar({ userName, userRole }: NavbarProps) {
+export default function Navbar() {
+  const { user, logout } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [logoutText, setLogoutText] = useState("Logout");
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const router = useRouter();
+
+  // Get user info from context or use defaults
+  const userName = user?.username || 'User';
+  const userRole = user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'User';
 
   useEffect(() => {
     // In a real app, this would fetch from an API
@@ -28,10 +29,10 @@ export default function Navbar({ userName, userRole }: NavbarProps) {
   }, []);
 
   const getDashboardLink = () => {
-    if (userRole === 'Student') return '/student';
-    if (userRole === 'Faculty') return '/faculty';
-    if (userRole === 'Librarian' || userRole === 'Staff') return '/librarian';
-    if (userRole === 'Admin') return '/admin';
+    if (user?.role === 'student') return '/student';
+    if (user?.role === 'faculty') return '/faculty';
+    if (user?.role === 'staff' || user?.role === 'librarian') return '/librarian';
+    if (user?.role === 'admin') return '/admin';
     return '/';
   };
 
@@ -47,10 +48,13 @@ export default function Navbar({ userName, userRole }: NavbarProps) {
       "Success starts with a book!",
       "The library misses you already!"
     ];
-    
+
     setIsLoggingOut(true);
     setLogoutText(slogans[Math.floor(Math.random() * slogans.length)]);
     setShowLogoutConfirm(false);
+
+    // Use AuthContext logout
+    logout();
     
     // Simulate a brief delay for the "catchy" logout experience
     setTimeout(() => {

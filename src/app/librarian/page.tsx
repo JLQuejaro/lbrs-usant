@@ -41,7 +41,7 @@ export default function LibrarianDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar userName="Maria Santos" userRole="Librarian" />
+      <Navbar />
       
       <AddBookModal 
         isOpen={isModalOpen} 

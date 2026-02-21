@@ -5,9 +5,11 @@ import { ArrowRight, UserPlus, CheckCircle, Loader2 } from 'lucide-react';
 import Image from 'next/image';
 import { userTypesByRole, UserRole, UserType } from './lib/mockData';
 import { useRouter } from 'next/navigation';
+import { useAuth } from './contexts/AuthContext';
 
 export default function AuthPage() {
   const router = useRouter();
+  const { login } = useAuth();
 
   const [isRegistering, setIsRegistering] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -55,8 +57,8 @@ export default function AuthPage() {
         throw new Error(data.message || 'Login failed');
       }
 
-      // Store token in localStorage
-      localStorage.setItem('token', data.token);
+      // Use AuthContext to store user data
+      login(data.user, data.token);
 
       // Redirect based on role
       const redirectPath = getRedirectPath(data.user.role);
@@ -95,8 +97,8 @@ export default function AuthPage() {
         throw new Error(data.message || 'Registration failed');
       }
 
-      // Store token in localStorage
-      localStorage.setItem('token', data.token);
+      // Use AuthContext to store user data
+      login(data.user, data.token);
 
       // Show success and switch to login
       alert(`Account created for ${fullName}! Redirecting to dashboard...`);

@@ -24,7 +24,7 @@ export default function WishlistPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar userName="John Student" userRole="Student" />
+      <Navbar />
 
       {/* Hero Header */}
       <div className="bg-gradient-to-r from-usant-red to-usant-orange pt-12 pb-24 px-8 overflow-hidden">

@@ -141,7 +141,7 @@ export default function StudentDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar userName="John Student" userRole="Student" />
+      <Navbar />
 
       {/* Hero Header */}
       <div className="relative bg-gradient-to-r from-usant-red to-usant-orange pt-12 pb-24 px-8 overflow-hidden">

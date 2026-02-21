@@ -41,7 +41,7 @@ export default function BookDetailsPage({ params }: { params: Promise<{ id: stri
   if (!book) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
-        <Navbar userName="John Student" userRole="Student" />
+        <Navbar />
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
              <h2 className="text-2xl font-bold text-gray-900 mb-6">Book Not Found</h2>
@@ -70,7 +70,7 @@ export default function BookDetailsPage({ params }: { params: Promise<{ id: stri
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar userName="John Student" userRole="Student" />
+      <Navbar />
 
       {/* MODAL COMPONENT */}
       <BorrowModal 
