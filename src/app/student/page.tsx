@@ -1,7 +1,7 @@
 "use client";
 
 import Navbar from '@/app/components/Navbar';
-import { Book, Layers, Search, Clock, Star, SlidersHorizontal, RotateCcw, X, History, Sparkles, ChevronDown, Users, Heart, Bell, Library, ShieldCheck, MapPin, GraduationCap } from 'lucide-react';
+import { Book, Layers, Search, Clock, SlidersHorizontal, RotateCcw, X, History, Sparkles, ChevronDown, Users, Heart, Bell, Library, ShieldCheck, MapPin, GraduationCap } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ALL_BOOKS, getCollaborativeRecommendations, getLocalWishlist, toggleLocalWishlist, MOCK_NOTIFICATIONS, getLocalBorrows } from '@/app/lib/mockData';
@@ -367,6 +367,16 @@ export default function StudentDashboard() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 {/* Column 1: Dropdowns */}
                 <div className="space-y-5">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-2">Genre</label>
+                    <select
+                      value={selectedGenre}
+                      onChange={(e) => setSelectedGenre(e.target.value)}
+                      className="w-full p-3 bg-white border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-usant-red focus:ring-1 focus:ring-usant-red"
+                    >
+                      {GENRES.map(g => <option key={g} value={g}>{g}</option>)}
+                    </select>
+                  </div>
                   <div>
                     <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-2">Sort By</label>
                     <select
