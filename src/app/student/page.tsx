@@ -469,13 +469,9 @@ export default function StudentDashboard() {
               
               <div className="p-5 flex-1 flex flex-col">
                 <div className="flex justify-between items-start mb-2">
-                  <div className="flex items-center gap-1">
-                    <Star size={14} className="fill-orange-400 text-orange-400" />
-                    <span className="text-xs font-bold text-gray-700">{book.rating}</span>
-                  </div>
                   <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded">{book.year}</span>
                 </div>
-                
+
                 <h3 className="font-bold text-gray-900 leading-tight mb-1 text-lg group-hover:text-usant-red transition-colors line-clamp-2">{book.title}</h3>
                 <p className="text-sm text-gray-500 mb-3 truncate">{book.author}</p>
                 
