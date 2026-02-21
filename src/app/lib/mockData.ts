@@ -1,31 +1,33 @@
 export type UserRole = 'student' | 'faculty' | 'staff' | 'admin';
 
-export type UserType = 
-  | 'Undergraduate Student' | 'Graduate Student (Master’s)' | 'Graduate Student (PhD)' | 'Distance/Online Learner'
-  | 'Professor' | 'Lecturer' | 'Researcher'
-  | 'Administrative Staff' | 'Technical/Support Staff' | 'Librarian'
-  | 'System Administrator';
+export type UserType =
+  | "Undergraduate Student" | "Graduate Student (Master's)" | "Graduate Student (PhD)" | "Distance/Online Learner"
+  | "Professor" | "Lecturer" | "Researcher"
+  | "Administrative Staff" | "Technical/Support Staff" | "Librarian"
+  | "System Administrator";
+
+export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
 
 // 1. Dynamic Mapping: userTypesByRole
 export const userTypesByRole: Record<UserRole, UserType[]> = {
   student: [
-    'Undergraduate Student', 
-    'Graduate Student (Master’s)', 
-    'Graduate Student (PhD)', 
-    'Distance/Online Learner'
+    "Undergraduate Student",
+    "Graduate Student (Master's)",
+    "Graduate Student (PhD)",
+    "Distance/Online Learner"
   ],
   faculty: [
-    'Professor', 
-    'Lecturer', 
-    'Researcher'
+    "Professor",
+    "Lecturer",
+    "Researcher"
   ],
   staff: [
-    'Administrative Staff', 
-    'Technical/Support Staff', 
-    'Librarian'
+    "Administrative Staff",
+    "Technical/Support Staff",
+    "Librarian"
   ],
   admin: [
-    'System Administrator'
+    "System Administrator"
   ]
 };
 
@@ -37,6 +39,27 @@ export interface User {
   userType: UserType;
   course?: string;
   department?: string;
+  approvalStatus?: ApprovalStatus;
+  requestedAt?: string;
+  reviewedBy?: string;
+  reviewedAt?: string;
+  reviewNotes?: string;
+}
+
+export interface AccountRequest {
+  id: string;
+  name: string;
+  email: string;
+  requestedRole: UserRole;
+  userType: UserType;
+  course?: string;
+  department?: string;
+  status: ApprovalStatus;
+  requestedAt: string;
+  reviewedBy?: string;
+  reviewedAt?: string;
+  reviewNotes?: string;
+  idDocument?: string;
 }
 
 export interface Book {
@@ -107,14 +130,79 @@ export interface Review {
 
 // 2. Mock Users
 export const MOCK_USERS: User[] = [
-  { id: '1', name: 'John Student', email: 'john@usant.edu', role: 'student', userType: 'Undergraduate Student', course: 'Computer Science' },
-  { id: '2', name: 'Alice Smith', email: 'alice@usant.edu', role: 'student', userType: 'Undergraduate Student', course: 'Computer Science' },
-  { id: '3', name: 'Bob Brown', email: 'bob@usant.edu', role: 'student', userType: 'Graduate Student (Master’s)', course: 'Information Tech' },
-  { id: '4', name: 'Charlie Davis', email: 'charlie@usant.edu', role: 'student', userType: 'Undergraduate Student', course: 'Computer Science' },
-  { id: '5', name: 'Diana Prince', email: 'diana@usant.edu', role: 'student', userType: 'Undergraduate Student', course: 'Engineering' },
-  { id: '6', name: 'Dr. Robert Johnson', email: 'rob@usant.edu', role: 'faculty', userType: 'Professor', department: 'Computer Science' },
+  { id: '1', name: 'John Student', email: 'john@usant.edu', role: 'student', userType: 'Undergraduate Student', course: 'Computer Science', approvalStatus: 'approved' },
+  { id: '2', name: 'Alice Smith', email: 'alice@usant.edu', role: 'student', userType: 'Undergraduate Student', course: 'Computer Science', approvalStatus: 'approved' },
+  { id: '3', name: 'Bob Brown', email: 'bob@usant.edu', role: 'student', userType: "Graduate Student (Master's)", course: 'Information Tech', approvalStatus: 'approved' },
+  { id: '4', name: 'Charlie Davis', email: 'charlie@usant.edu', role: 'student', userType: 'Undergraduate Student', course: 'Computer Science', approvalStatus: 'approved' },
+  { id: '5', name: 'Diana Prince', email: 'diana@usant.edu', role: 'student', userType: 'Undergraduate Student', course: 'Engineering', approvalStatus: 'approved' },
+  { id: '6', name: 'Dr. Robert Johnson', email: 'rob@usant.edu', role: 'faculty', userType: 'Professor', department: 'Computer Science', approvalStatus: 'approved' },
   { id: '7', name: 'Maria Santos', email: 'maria@usant.edu', role: 'staff', userType: 'Librarian' },
   { id: '8', name: 'Admin User', email: 'admin@usant.edu', role: 'admin', userType: 'System Administrator' },
+];
+
+// 9. Mock Account Requests (Pending Approvals)
+export const MOCK_ACCOUNT_REQUESTS: AccountRequest[] = [
+  {
+    id: 'REQ-001',
+    name: 'Emily Wilson',
+    email: 'emily.wilson@usant.edu',
+    requestedRole: 'student',
+    userType: 'Undergraduate Student',
+    course: 'Computer Science',
+    status: 'pending',
+    requestedAt: '2026-02-20T09:15:00Z',
+    idDocument: 'student_id_001.pdf'
+  },
+  {
+    id: 'REQ-002',
+    name: 'Dr. Michael Chen',
+    email: 'michael.chen@usant.edu',
+    requestedRole: 'faculty',
+    userType: 'Professor',
+    department: 'Information Tech',
+    status: 'pending',
+    requestedAt: '2026-02-19T14:30:00Z',
+    idDocument: 'faculty_credentials_002.pdf'
+  },
+  {
+    id: 'REQ-003',
+    name: 'Sarah Martinez',
+    email: 'sarah.martinez@usant.edu',
+    requestedRole: 'student',
+    userType: 'Graduate Student (PhD)',
+    course: 'Engineering',
+    status: 'pending',
+    requestedAt: '2026-02-18T11:45:00Z',
+    idDocument: 'student_id_003.pdf'
+  },
+  {
+    id: 'REQ-004',
+    name: 'Prof. James Anderson',
+    email: 'james.anderson@usant.edu',
+    requestedRole: 'faculty',
+    userType: 'Lecturer',
+    department: 'Engineering',
+    status: 'approved',
+    requestedAt: '2026-02-15T08:00:00Z',
+    reviewedBy: 'Admin User',
+    reviewedAt: '2026-02-16T10:30:00Z',
+    reviewNotes: 'Verified faculty credentials. Approved for Engineering department.',
+    idDocument: 'faculty_credentials_004.pdf'
+  },
+  {
+    id: 'REQ-005',
+    name: 'Invalid User',
+    email: 'invalid@test.com',
+    requestedRole: 'student',
+    userType: 'Undergraduate Student',
+    course: 'Unknown',
+    status: 'rejected',
+    requestedAt: '2026-02-10T16:20:00Z',
+    reviewedBy: 'Admin User',
+    reviewedAt: '2026-02-11T09:00:00Z',
+    reviewNotes: 'Invalid email domain. Not a USANT affiliated email.',
+    idDocument: 'invalid_doc_005.pdf'
+  },
 ];
 
 // 3. Mock Books
