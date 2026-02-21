@@ -65,7 +65,6 @@ export default function StudentDashboard() {
 
   // Filter Values
   const [selectedGenre, setSelectedGenre] = useState('All');
-  const [minRating, setMinRating] = useState(0);
   const [maxYear, setMaxYear] = useState(2026);
   const [inStockOnly, setInStockOnly] = useState(false);
   const [sortBy, setSortBy] = useState('Relevance');
@@ -115,16 +114,14 @@ export default function StudentDashboard() {
 
   // Filter Logic
   const filteredBooks = ALL_BOOKS.filter(book => {
-    const matchesSearch = book.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    const matchesSearch = book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           book.author.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesGenre = selectedGenre === 'All' || book.genre === selectedGenre;
-    const matchesRating = book.rating >= minRating;
     const matchesYear = book.year <= maxYear;
     const matchesStock = inStockOnly ? book.stock : true;
 
-    return matchesSearch && matchesGenre && matchesRating && matchesYear && matchesStock;
+    return matchesSearch && matchesGenre && matchesYear && matchesStock;
   }).sort((a, b) => {
-    if (sortBy === 'Rating') return b.rating - a.rating;
     if (sortBy === 'Newest') return b.year - a.year;
     if (sortBy === 'Oldest') return a.year - b.year;
     if (sortBy === 'Title') return a.title.localeCompare(b.title);
@@ -133,7 +130,6 @@ export default function StudentDashboard() {
 
   const clearFilters = () => {
     setSelectedGenre('All');
-    setMinRating(0);
     setMaxYear(2026);
     setInStockOnly(false);
     setSortBy('Relevance');
@@ -237,12 +233,8 @@ export default function StudentDashboard() {
                     <div className="flex flex-col justify-center min-w-0 flex-1">
                        <h4 className="font-bold text-gray-900 text-sm truncate group-hover:text-usant-red transition-colors">{book.title}</h4>
                        <p className="text-xs text-gray-500 mb-1 truncate">{book.author}</p>
-                       <div className="flex items-center gap-1">
-                          <Star size={10} className="fill-orange-400 text-orange-400" />
-                          <span className="text-[10px] font-bold text-gray-700">{book.rating}</span>
-                       </div>
                     </div>
-                    <button 
+                    <button
                        onClick={(e) => handleToggleWishlist(e, book.id)}
                        className={`p-1.5 rounded-full hover:bg-white shadow-sm transition-all ${wishlist.includes(book.id) ? 'text-red-500' : 'text-gray-300'}`}
                     >
@@ -276,12 +268,8 @@ export default function StudentDashboard() {
                     <div className="flex flex-col justify-center min-w-0 flex-1">
                        <h4 className="font-bold text-gray-900 text-sm truncate group-hover:text-blue-600 transition-colors">{book.title}</h4>
                        <p className="text-xs text-gray-500 mb-1 truncate">{book.author}</p>
-                       <div className="flex items-center gap-1">
-                          <Star size={10} className="fill-orange-400 text-orange-400" />
-                          <span className="text-[10px] font-bold text-gray-700">{book.rating}</span>
-                       </div>
                     </div>
-                    <button 
+                    <button
                        onClick={(e) => handleToggleWishlist(e, book.id)}
                        className={`p-1.5 rounded-full hover:bg-white shadow-sm transition-all ${wishlist.includes(book.id) ? 'text-red-500' : 'text-gray-300'}`}
                     >
@@ -380,25 +368,14 @@ export default function StudentDashboard() {
                 {/* Column 1: Dropdowns */}
                 <div className="space-y-5">
                   <div>
-                    <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-2">Genre</label>
-                    <select 
-                      value={selectedGenre}
-                      onChange={(e) => setSelectedGenre(e.target.value)}
-                      className="w-full p-3 bg-white border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-usant-red focus:ring-1 focus:ring-usant-red"
-                    >
-                      {GENRES.map(g => <option key={g} value={g}>{g}</option>)}
-                    </select>
-                  </div>
-                  <div>
                     <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-2">Sort By</label>
-                    <select 
+                    <select
                       value={sortBy}
                       onChange={(e) => setSortBy(e.target.value)}
                       className="w-full p-3 bg-white border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-usant-red focus:ring-1 focus:ring-usant-red"
                     >
                       <option value="Relevance">Relevance</option>
                       <option value="Title">Title (A-Z)</option>
-                      <option value="Rating">Rating (High to Low)</option>
                       <option value="Newest">Newest First</option>
                       <option value="Oldest">Oldest First</option>
                     </select>
@@ -409,25 +386,11 @@ export default function StudentDashboard() {
                 <div className="space-y-8">
                    <div>
                       <div className="flex justify-between mb-3">
-                        <label className="text-xs font-bold text-gray-700 uppercase tracking-wide">Min. Rating: {minRating}</label>
-                        <Star size={14} className="text-yellow-400 fill-yellow-400" />
-                      </div>
-                      <input 
-                        type="range" 
-                        min="0" max="5" step="0.5" 
-                        value={minRating}
-                        onChange={(e) => setMinRating(parseFloat(e.target.value))}
-                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-yellow-400"
-                      />
-                   </div>
-                   
-                   <div>
-                      <div className="flex justify-between mb-3">
                         <label className="text-xs font-bold text-gray-700 uppercase tracking-wide">Max Year: {maxYear}</label>
                       </div>
-                      <input 
-                        type="range" 
-                        min="1950" max="2026" 
+                      <input
+                        type="range"
+                        min="1950" max="2026"
                         value={maxYear}
                         onChange={(e) => setMaxYear(parseInt(e.target.value))}
                         className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-usant-red"
