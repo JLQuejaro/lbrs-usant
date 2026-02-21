@@ -103,14 +103,10 @@ export default function MyShelfPage() {
                    </span>
                 </div>
 
-                <div className="border-t border-gray-100 pt-4 grid grid-cols-2 gap-4 text-left">
+                <div className="border-t border-gray-100 pt-4 text-left">
                    <div>
                      <span className="block text-xs text-gray-400 uppercase font-bold">Books Out</span>
                      <span className="block text-lg font-bold text-gray-900">{borrows.length}</span>
-                   </div>
-                   <div>
-                     <span className="block text-xs text-gray-400 uppercase font-bold">Fines</span>
-                     <span className="block text-lg font-bold text-gray-900">₱0.00</span>
                    </div>
                 </div>
               </div>

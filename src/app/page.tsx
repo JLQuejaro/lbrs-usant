@@ -85,7 +85,7 @@ export default function AuthPage() {
       </div>
 
       {/* RIGHT SIDE: Auth Form */}
-      <div className="flex-1 flex items-center justify-center p-8">
+      <div className="flex-1 flex items-center justify-center p-8 overflow-y-auto">
         <div className="bg-white w-full max-w-md p-10 rounded-2xl shadow-2xl border border-white/50 animate-in fade-in zoom-in duration-300">
           
           {/* Header toggles based on mode */}

@@ -7,7 +7,42 @@ import Link from 'next/link';
 import { ALL_BOOKS, getCollaborativeRecommendations, getLocalWishlist, toggleLocalWishlist, MOCK_NOTIFICATIONS, getLocalBorrows } from '@/app/lib/mockData';
 
 const GENRES = ['All', 'Computer Science', 'Software Engineering', 'Fiction', 'History', 'Finance', 'Self-Help', 'Engineering', 'Education', 'Psychology'];
-const COURSES = ['Computer Science', 'Information Tech', 'Engineering', 'Education'];
+const COURSES = [
+  // College of Information and Business Management
+  'Business Administration',
+  'Hospitality Management',
+  'Tourism Management',
+  'Computer Science',
+  'Library and Information Science',
+  'Office Administration',
+  // College of Accountancy
+  'Accountancy',
+  'Accounting Information System',
+  'Internal Auditing',
+  'Management Accounting',
+  // College of Engineering and Architecture
+  'Architecture',
+  'Civil Engineering',
+  // College of Maritime Education
+  'Marine Transportation',
+  'Marine Engineering',
+  // College of Criminal Justice Education
+  'Criminology',
+  // College of Health Care Education
+  'Nursing',
+  // College of Liberal Arts
+  'Psychology',
+  'Communication',
+  'English Language',
+  'Political Science',
+  // College of Teacher Education
+  'Elementary Education',
+  'Secondary Education',
+  'Technology and Livelihood Education',
+  'Early Childhood Education',
+  'Physical Education',
+  'Special Needs Education',
+];
 
 export default function StudentDashboard() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -178,8 +213,9 @@ export default function StudentDashboard() {
                     Switch Course <ChevronDown size={12} />
                  </button>
                  <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden hidden group-hover:block z-50 animate-in fade-in zoom-in-95 duration-150">
+                    <div className="max-h-64 overflow-y-auto">
                     {COURSES.map(course => (
-                       <button 
+                       <button
                          key={course}
                          onClick={() => setUserCourse(course)}
                          className={`w-full text-left px-4 py-2 text-sm hover:bg-red-50 hover:text-usant-red transition ${userCourse === course ? 'font-bold text-usant-red bg-red-50' : 'text-gray-600'}`}
@@ -187,6 +223,7 @@ export default function StudentDashboard() {
                          {course}
                        </button>
                     ))}
+                    </div>
                  </div>
               </div>
            </div>
