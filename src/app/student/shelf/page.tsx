@@ -1,56 +1,91 @@
 "use client";
 
 import Navbar from '@/app/components/Navbar';
-import { Book as BookIcon, Clock, Calendar, AlertCircle, CheckCircle, RotateCcw, ArrowLeft, Loader2, Layers } from 'lucide-react';
+import { Book as BookIcon, Clock, Calendar, CheckCircle, RotateCcw, ArrowLeft, Loader2, Layers } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getLocalBorrows, returnBook, ALL_BOOKS, LocalBorrow } from '@/app/lib/mockData';
+import { useAuth } from '@/app/contexts/AuthContext';
 
-// Mock Data: Past History
-const HISTORY = [
-  { 
-    id: 3, 
-    title: 'Design Patterns', 
-    author: 'Erich Gamma', 
-    returnedDate: 'Jan 15, 2026', 
-    status: 'Returned', 
-    coverColor: 'bg-emerald-800' 
-  },
-  { 
-    id: 4, 
-    title: 'The Pragmatic Programmer', 
-    author: 'Andrew Hunt', 
-    returnedDate: 'Dec 10, 2025', 
-    status: 'Returned', 
-    coverColor: 'bg-slate-700' 
-  }
-];
+interface BorrowRecord {
+  id: number;
+  bookId: number;
+  title?: string;
+  author?: string;
+  color?: string;
+  borrowedDate: string;
+  dueDate: string;
+  returnedDate?: string;
+  status: string;
+}
 
 export default function MyShelfPage() {
   const router = useRouter();
+  const { user, token } = useAuth();
   const [activeTab, setActiveTab] = useState<'current' | 'history'>('current');
-  const [borrows, setBorrows] = useState<LocalBorrow[]>([]);
+  const [borrows, setBorrows] = useState<BorrowRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const userName = user?.username || 'User';
+  const userCourse = user?.course || 'Course';
+  const userYear = user?.year_level || 'Year';
+  const userInitials = userName
+    .split(' ')
+    .map(part => part[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
 
   useEffect(() => {
-    setBorrows(getLocalBorrows());
-    setIsLoading(false);
-  }, []);
+    if (!token) {
+      setIsLoading(false);
+      return;
+    }
 
-  const handleReturn = (id: number) => {
-    const updated = returnBook(id);
-    setBorrows(updated);
+    let isMounted = true;
+    const loadBorrows = async () => {
+      try {
+        const response = await fetch('/api/borrows?history=true', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!response.ok) return;
+        const data = await response.json();
+        if (isMounted) setBorrows(data.borrows || []);
+      } catch (error) {
+        console.error('Failed to load borrows:', error);
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    };
+
+    loadBorrows();
+    return () => {
+      isMounted = false;
+    };
+  }, [token]);
+
+  const handleReturn = async (borrowId: number) => {
+    if (!token) return;
+    try {
+      const response = await fetch(`/api/borrows?id=${borrowId}`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) return;
+
+      const refreshed = await fetch('/api/borrows?history=true', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (refreshed.ok) {
+        const data = await refreshed.json();
+        setBorrows(data.borrows || []);
+      }
+    } catch (error) {
+      console.error('Failed to return book:', error);
+    }
   };
 
-  const borrowedBooks = borrows.map(b => {
-    const bookInfo = ALL_BOOKS.find(book => book.id === b.id);
-    return {
-      ...b,
-      ...bookInfo,
-      status: new Date(b.dueDate) < new Date() ? 'Overdue' : 'Active'
-    };
-  });
+  const currentBorrows = borrows.filter(b => b.status === 'active');
+  const historyBorrows = borrows.filter(b => b.status !== 'active');
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -87,15 +122,15 @@ export default function MyShelfPage() {
             <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
               <div className="bg-gray-900 h-24 relative">
                 {/* Avatar */}
-                <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 w-20 h-20 rounded-full bg-white p-1 shadow-md">
+                  <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 w-20 h-20 rounded-full bg-white p-1 shadow-md">
                    <div className="w-full h-full rounded-full bg-gradient-to-br from-orange-400 to-red-600 flex items-center justify-center text-white font-bold text-2xl">
-                     JS
+                     {userInitials}
                    </div>
                 </div>
               </div>
               <div className="pt-12 pb-6 px-6 text-center">
-                <h2 className="text-xl font-bold text-gray-900">John Student</h2>
-                <p className="text-sm text-gray-500 mb-4">4th Year • Computer Science</p>
+                <h2 className="text-xl font-bold text-gray-900">{userName}</h2>
+                <p className="text-sm text-gray-500 mb-4">{userYear} • {userCourse}</p>
                 
                 <div className="flex justify-center gap-2 mb-6">
                    <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full flex items-center gap-1">
@@ -106,7 +141,7 @@ export default function MyShelfPage() {
                 <div className="border-t border-gray-100 pt-4 text-left">
                    <div>
                      <span className="block text-xs text-gray-400 uppercase font-bold">Books Out</span>
-                     <span className="block text-lg font-bold text-gray-900">{borrows.length}</span>
+                     <span className="block text-lg font-bold text-gray-900">{currentBorrows.length}</span>
                    </div>
                 </div>
 
@@ -140,7 +175,7 @@ export default function MyShelfPage() {
                         : 'border-transparent text-gray-500 hover:text-gray-700'
                     }`}
                   >
-                    Current Borrows ({borrows.length})
+                    Current Borrows ({currentBorrows.length})
                   </button>
                   <button 
                     onClick={() => setActiveTab('history')}
@@ -163,45 +198,45 @@ export default function MyShelfPage() {
                         <div className="flex justify-center py-20">
                           <Loader2 size={32} className="text-usant-red animate-spin" />
                         </div>
-                      ) : borrowedBooks.length > 0 ? borrowedBooks.map((book) => (
-                        <div key={book.id} className="flex flex-col sm:flex-row gap-4 p-4 rounded-xl border border-gray-100 hover:shadow-md transition bg-white group">
+                      ) : currentBorrows.length > 0 ? currentBorrows.map((borrow) => {
+                        const isOverdue = new Date(borrow.dueDate) < new Date();
+                        const status = isOverdue ? 'Overdue' : 'Active';
+                        return (
+                        <div key={borrow.id} className="flex flex-col sm:flex-row gap-4 p-4 rounded-xl border border-gray-100 hover:shadow-md transition bg-white group">
                            {/* Tiny Cover */}
-                           <div className={`w-16 h-24 sm:w-20 sm:h-28 ${book.color || 'bg-gray-200'} rounded-md shadow-sm flex-shrink-0`}></div>
+                           <div className={`w-16 h-24 sm:w-20 sm:h-28 ${borrow.color || 'bg-gray-200'} rounded-md shadow-sm flex-shrink-0`}></div>
                            
                            <div className="flex-1">
-                             <h3 className="font-bold text-lg text-gray-900">{book.title}</h3>
-                             <p className="text-sm text-gray-500 mb-3">{book.author}</p>
+                             <h3 className="font-bold text-lg text-gray-900">{borrow.title}</h3>
+                             <p className="text-sm text-gray-500 mb-3">{borrow.author}</p>
                              
                              <div className="flex flex-wrap gap-4 text-sm">
                                <div className="flex items-center gap-2 text-gray-600">
                                   <Calendar size={16} className="text-gray-400" /> 
-                                  <span>Borrowed: {new Date(book.borrowedDate!).toLocaleDateString()}</span>
+                                  <span>Borrowed: {new Date(borrow.borrowedDate).toLocaleDateString()}</span>
                                </div>
-                               <div className={`flex items-center gap-2 font-medium ${
-                                   book.status === 'Overdue' ? 'text-red-600' : 'text-orange-600'
-                               }`}>
+                               <div className={`flex items-center gap-2 font-medium ${status === 'Overdue' ? 'text-red-600' : 'text-orange-600'}`}>
                                   <Clock size={16} /> 
-                                  <span>Due: {new Date(book.dueDate!).toLocaleDateString()}</span>
+                                  <span>Due: {new Date(borrow.dueDate).toLocaleDateString()}</span>
                                </div>
                              </div>
                            </div>
 
                            {/* Status & Action */}
                            <div className="flex flex-row sm:flex-col justify-between items-end gap-2">
-                              <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                                  book.status === 'Overdue' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'
-                              }`}>
-                                {book.status}
+                              <span className={`px-3 py-1 rounded-full text-xs font-bold ${status === 'Overdue' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                                {status}
                               </span>
                               <button 
-                                onClick={() => handleReturn(book.id!)}
+                                onClick={() => handleReturn(borrow.id)}
                                 className="text-sm font-medium text-usant-red hover:underline flex items-center gap-1"
                               >
                                 <RotateCcw size={14} /> Return
                               </button>
                            </div>
                         </div>
-                      )) : (
+                      );
+                      }) : (
                         <div className="text-center py-20">
                            <BookIcon size={48} className="text-gray-200 mx-auto mb-4" />
                            <h3 className="text-lg font-bold text-gray-900">Your shelf is empty</h3>
@@ -216,16 +251,18 @@ export default function MyShelfPage() {
 
                   {activeTab === 'history' && (
                     <div className="space-y-4">
-                       {HISTORY.map((book) => (
-                        <div key={book.id} className="flex items-center gap-4 p-4 rounded-xl border border-gray-100 opacity-75 hover:opacity-100 transition">
-                           <div className={`w-12 h-16 ${book.coverColor} rounded-md shadow-sm flex-shrink-0`}></div>
+                      {historyBorrows.map((borrow) => (
+                        <div key={borrow.id} className="flex items-center gap-4 p-4 rounded-xl border border-gray-100 opacity-75 hover:opacity-100 transition">
+                           <div className={`w-12 h-16 ${borrow.color || 'bg-gray-200'} rounded-md shadow-sm flex-shrink-0`}></div>
                            <div className="flex-1">
-                             <h3 className="font-bold text-gray-900">{book.title}</h3>
-                             <p className="text-xs text-gray-500">{book.author}</p>
+                             <h3 className="font-bold text-gray-900">{borrow.title}</h3>
+                             <p className="text-xs text-gray-500">{borrow.author}</p>
                            </div>
                            <div className="text-right">
                               <span className="block text-xs text-gray-400 mb-1">Returned on</span>
-                              <span className="block text-sm font-medium text-gray-700">{book.returnedDate}</span>
+                              <span className="block text-sm font-medium text-gray-700">
+                                {borrow.returnedDate ? new Date(borrow.returnedDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '---'}
+                              </span>
                            </div>
                         </div>
                       ))}

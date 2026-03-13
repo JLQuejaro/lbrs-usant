@@ -5,28 +5,109 @@ import { Star, Clock, BookOpen, Calendar, ArrowLeft, Heart, Share2, MessageSquar
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useState, useEffect, use } from 'react';
-import { ALL_BOOKS, getReviewsByBookId, Book, Review, getLocalWishlist, toggleLocalWishlist, getLocalBorrows } from '@/app/lib/mockData';
 import BorrowModal from '@/app/components/BorrowModal';
+import { getLocalWishlist, toggleLocalWishlist } from '@/app/lib/localWishlist';
+import { useAuth } from '@/app/contexts/AuthContext';
+
+interface Book {
+  id: number;
+  title: string;
+  author: string;
+  genre: string;
+  color: string;
+  rating?: number;
+  reviewCount?: number;
+  pages?: number;
+  year?: number;
+  description?: string;
+  stock: boolean;
+}
+
+interface Review {
+  id: number;
+  userName: string;
+  rating: number;
+  comment?: string;
+  timestamp: string;
+}
 
 export default function BookDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
+  const { token } = useAuth();
   const unwrappedParams = use(params);
   const bookId = parseInt(unwrappedParams.id);
   const [book, setBook] = useState<Book | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [relatedBooks, setRelatedBooks] = useState<Book[]>([]);
   const [isInWishlist, setIsInWishlist] = useState(false);
   const [isBorrowed, setIsBorrowed] = useState(false);
   const [isBorrowModalOpen, setIsBorrowModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const foundBook = ALL_BOOKS.find(b => b.id === bookId);
-    if (foundBook) {
-      setBook(foundBook);
-      setReviews(getReviewsByBookId(bookId));
-      setIsInWishlist(getLocalWishlist().includes(bookId));
-      setIsBorrowed(getLocalBorrows().some(b => b.id === bookId));
-    }
+    setIsInWishlist(getLocalWishlist().includes(bookId));
   }, [bookId]);
+
+  useEffect(() => {
+    if (!token) {
+      setIsLoading(false);
+      return;
+    }
+
+    let isMounted = true;
+
+    const loadBook = async () => {
+      try {
+        const bookRes = await fetch(`/api/books?id=${bookId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (!bookRes.ok) {
+          if (isMounted) {
+            setBook(null);
+            setIsLoading(false);
+          }
+          return;
+        }
+
+        const bookData = await bookRes.json();
+        const fetchedBook = bookData.book as Book;
+        if (isMounted) setBook(fetchedBook);
+
+        const [reviewsRes, borrowsRes, relatedRes] = await Promise.all([
+          fetch(`/api/reviews?bookId=${bookId}`, { headers: { Authorization: `Bearer ${token}` } }),
+          fetch('/api/borrows?history=true', { headers: { Authorization: `Bearer ${token}` } }),
+          fetch(`/api/books?genre=${encodeURIComponent(fetchedBook.genre)}&limit=6`, { headers: { Authorization: `Bearer ${token}` } }),
+        ]);
+
+        if (reviewsRes.ok) {
+          const data = await reviewsRes.json();
+          if (isMounted) setReviews(data.reviews || []);
+        }
+
+        if (borrowsRes.ok) {
+          const data = await borrowsRes.json();
+          const borrowed = (data.borrows || []).some((b: any) => b.bookId === bookId && b.status === 'active');
+          if (isMounted) setIsBorrowed(borrowed);
+        }
+
+        if (relatedRes.ok) {
+          const data = await relatedRes.json();
+          const related = (data.books || []).filter((b: Book) => b.id !== bookId).slice(0, 3);
+          if (isMounted) setRelatedBooks(related);
+        }
+        if (isMounted) setIsLoading(false);
+      } catch (error) {
+        console.error('Failed to load book details:', error);
+        if (isMounted) setIsLoading(false);
+      }
+    };
+
+    loadBook();
+    return () => {
+      isMounted = false;
+    };
+  }, [bookId, token]);
 
   const handleToggleWishlist = () => {
     const newWishlist = toggleLocalWishlist(bookId);
@@ -35,10 +116,20 @@ export default function BookDetailsPage({ params }: { params: Promise<{ id: stri
 
   const handleModalClose = () => {
     setIsBorrowModalOpen(false);
-    setIsBorrowed(getLocalBorrows().some(b => b.id === bookId));
+    if (!token) return;
+    fetch('/api/borrows?history=true', {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (!data) return;
+        const borrowed = (data.borrows || []).some((b: any) => b.bookId === bookId && b.status === 'active');
+        setIsBorrowed(borrowed);
+      })
+      .catch(error => console.error('Failed to refresh borrow status:', error));
   };
 
-  if (!book) {
+  if (!book && !isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
         <Navbar />
@@ -66,7 +157,16 @@ export default function BookDetailsPage({ params }: { params: Promise<{ id: stri
     );
   }
 
-  const relatedBooks = ALL_BOOKS.filter(b => b.genre === book.genre && b.id !== book.id).slice(0, 3);
+  if (isLoading || !book) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col">
+        <Navbar />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center text-gray-500">Loading book details...</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">

@@ -5,17 +5,53 @@ import { Star, Heart, ArrowLeft, Book as BookIcon, Trash2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ALL_BOOKS, getLocalWishlist, toggleLocalWishlist } from '@/app/lib/mockData';
+import { getLocalWishlist, toggleLocalWishlist } from '@/app/lib/localWishlist';
+import { useAuth } from '@/app/contexts/AuthContext';
+
+interface Book {
+  id: number;
+  title: string;
+  author: string;
+  genre: string;
+  color: string;
+  rating?: number;
+  stock: boolean;
+}
 
 export default function WishlistPage() {
   const router = useRouter();
   const [wishlistIds, setWishlistIds] = useState<number[]>([]);
+  const [books, setBooks] = useState<Book[]>([]);
+  const { token } = useAuth();
   
   useEffect(() => {
     setWishlistIds(getLocalWishlist());
   }, []);
 
-  const wishlistBooks = ALL_BOOKS.filter(book => wishlistIds.includes(book.id));
+  useEffect(() => {
+    if (!token) return;
+
+    let isMounted = true;
+    const loadBooks = async () => {
+      try {
+        const response = await fetch('/api/books?limit=1000', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!response.ok) return;
+        const data = await response.json();
+        if (isMounted) setBooks(data.books || []);
+      } catch (error) {
+        console.error('Failed to load books:', error);
+      }
+    };
+
+    loadBooks();
+    return () => {
+      isMounted = false;
+    };
+  }, [token]);
+
+  const wishlistBooks = books.filter(book => wishlistIds.includes(book.id));
 
   const handleRemove = (bookId: number) => {
     const newWishlist = toggleLocalWishlist(bookId);

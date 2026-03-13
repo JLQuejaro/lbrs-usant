@@ -1,15 +1,49 @@
 "use client";
 
 import Navbar from '@/app/components/Navbar';
-import { Bell, Clock, Calendar, BookOpen, ArrowLeft, MoreVertical, CheckCircle2, Info, AlertTriangle } from 'lucide-react';
+import { Bell, Clock, BookOpen, ArrowLeft, CheckCircle2, Info } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { MOCK_NOTIFICATIONS, Notification } from '@/app/lib/mockData';
+import { useAuth } from '@/app/contexts/AuthContext';
+
+interface Notification {
+  id: number;
+  title: string;
+  message: string;
+  type: 'availability' | 'reminder' | 'system';
+  timestamp: string;
+  read: boolean;
+  bookId?: number;
+}
 
 export default function NotificationsPage() {
   const router = useRouter();
-  const [notifications, setNotifications] = useState<Notification[]>(MOCK_NOTIFICATIONS);
+  const { token } = useAuth();
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+
+  useEffect(() => {
+    if (!token) return;
+
+    let isMounted = true;
+    const loadNotifications = async () => {
+      try {
+        const response = await fetch('/api/notifications', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!response.ok) return;
+        const data = await response.json();
+        if (isMounted) setNotifications(data.notifications || []);
+      } catch (error) {
+        console.error('Failed to load notifications:', error);
+      }
+    };
+
+    loadNotifications();
+    return () => {
+      isMounted = false;
+    };
+  }, [token]);
 
   const markAllAsRead = () => {
     setNotifications(notifications.map(n => ({ ...n, read: true })));

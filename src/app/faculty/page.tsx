@@ -4,27 +4,107 @@ import Navbar from '@/app/components/Navbar';
 import { Book, Layers, FileText, ListPlus, Zap, BarChart3, TrendingUp, Users, ExternalLink, Plus, BookOpen, Clock } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ALL_BOOKS, MOCK_JOURNALS, MOCK_READING_LISTS, Book as BookType, Journal, ReadingList } from '@/app/lib/mockData';
+import { useAuth } from '@/app/contexts/AuthContext';
+
+interface Book {
+  id: number;
+  title: string;
+  author: string;
+  genre: string;
+  color: string;
+  rating?: number;
+  year: number;
+  stock: boolean;
+  courses: string[];
+  description?: string;
+  pages?: number;
+  status?: string;
+  reviewCount?: number;
+  dateAdded?: string;
+  borrowCount: number;
+  views: number;
+  featured?: boolean;
+  location?: string;
+}
+
+interface Journal {
+  id: number;
+  title: string;
+  publisher: string;
+  subject: string;
+  impactFactor: number;
+  accessUrl: string;
+  type: 'Journal' | 'Reference';
+}
+
+interface ReadingList {
+  id: number;
+  title: string;
+  facultyId: string;
+  bookIds: number[];
+  studentCount: number;
+}
 
 export default function FacultyDashboard() {
   const [selectedGenre, setSelectedGenre] = useState('All');
-  const facultyDept = 'Computer Science'; // Simulated department
+  const { user, token } = useAuth();
+  const [books, setBooks] = useState<Book[]>([]);
+  const [journals, setJournals] = useState<Journal[]>([]);
+  const [readingLists, setReadingLists] = useState<ReadingList[]>([]);
+  const facultyDept = user?.department || 'Computer Science';
+
+  useEffect(() => {
+    if (!token) return;
+
+    let isMounted = true;
+    const loadData = async () => {
+      try {
+        const [booksRes, journalsRes, listsRes] = await Promise.all([
+          fetch('/api/books?limit=1000', { headers: { Authorization: `Bearer ${token}` } }),
+          fetch(`/api/journals?subject=${encodeURIComponent(facultyDept)}`, { headers: { Authorization: `Bearer ${token}` } }),
+          fetch('/api/reading-lists', { headers: { Authorization: `Bearer ${token}` } }),
+        ]);
+
+        if (booksRes.ok) {
+          const data = await booksRes.json();
+          if (isMounted) setBooks(data.books || []);
+        }
+
+        if (journalsRes.ok) {
+          const data = await journalsRes.json();
+          if (isMounted) setJournals(data.journals || []);
+        }
+
+        if (listsRes.ok) {
+          const data = await listsRes.json();
+          if (isMounted) setReadingLists(data.lists || []);
+        }
+      } catch (error) {
+        console.error('Failed to load faculty data:', error);
+      }
+    };
+
+    loadData();
+    return () => {
+      isMounted = false;
+    };
+  }, [token, facultyDept]);
 
   // Filters for Faculty Specifics
-  const relevantJournals = MOCK_JOURNALS.filter(j => j.subject === facultyDept);
-  const readingLists = MOCK_READING_LISTS.filter(l => l.facultyId === '6'); // Assuming '6' is Dr. Robert Johnson
-  const newAcquisitions = ALL_BOOKS.filter(b => b.genre === facultyDept || b.courses.includes(facultyDept))
-    .sort((a, b) => new Date(b.dateAdded).getTime() - new Date(a.dateAdded).getTime())
+  const relevantJournals = journals.length > 0 ? journals : [];
+  const newAcquisitions = books
+    .filter(b => b.genre === facultyDept || b.courses?.includes(facultyDept))
+    .sort((a, b) => new Date(b.dateAdded || 0).getTime() - new Date(a.dateAdded || 0).getTime())
     .slice(0, 4);
 
   // Analytics: Top engaging materials (simulated by borrow count)
-  const topMaterials = [...ALL_BOOKS]
+  const topMaterials = [...books]
     .sort((a, b) => b.borrowCount - a.borrowCount)
     .slice(0, 5);
 
   const filteredBooks = selectedGenre === 'All' 
-    ? ALL_BOOKS 
-    : ALL_BOOKS.filter(book => book.genre === selectedGenre);
+    ? books 
+    : books.filter(book => book.genre === selectedGenre);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -242,7 +322,7 @@ export default function FacultyDashboard() {
            </div>
            
            <div className="flex flex-wrap gap-2 mb-8">
-             {['All', ...new Set(ALL_BOOKS.map(b => b.genre))].map((genre) => (
+             {['All', ...new Set(books.map(b => b.genre))].map((genre) => (
                <button
                  key={genre}
                  onClick={() => setSelectedGenre(genre)}

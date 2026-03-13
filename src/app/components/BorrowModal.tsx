@@ -2,8 +2,8 @@
 "use client";
 
 import { CheckCircle, Calendar, X, BookOpen, AlertCircle, Loader2, ArrowLeft } from 'lucide-react';
-import { useState } from 'react';
-import { borrowBook } from '@/app/lib/mockData';
+import { useMemo, useState } from 'react';
+import { useAuth } from '@/app/contexts/AuthContext';
 
 interface BorrowModalProps {
   isOpen: boolean;
@@ -15,29 +15,66 @@ interface BorrowModalProps {
 export default function BorrowModal({ isOpen, onClose, bookTitle, bookId }: BorrowModalProps) {
   const [step, setStep] = useState<'confirm' | 'success'>('confirm');
   const [isBorrowing, setIsBorrowing] = useState(false);
+  const [error, setError] = useState('');
+  const [dueDate, setDueDate] = useState<Date | null>(null);
+  const { token, user } = useAuth();
 
   if (!isOpen) return null;
 
-  const handleConfirmBorrow = () => {
+  const handleConfirmBorrow = async () => {
+    if (!token) {
+      setError('You must be logged in to borrow books.');
+      return;
+    }
+
     setIsBorrowing(true);
-    // Simulate a brief API call
-    setTimeout(() => {
-      borrowBook(bookId);
-      setIsBorrowing(false);
+    setError('');
+    try {
+      const response = await fetch('/api/borrows', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ bookId }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to borrow book');
+      }
+
+      if (data?.dueDate) {
+        setDueDate(new Date(data.dueDate));
+      }
+
       setStep('success');
-    }, 1500);
+    } catch (err: any) {
+      setError(err.message || 'Failed to borrow book');
+    } finally {
+      setIsBorrowing(false);
+    }
   };
 
   const handleClose = () => {
     setStep('confirm');
+    setError('');
+    setDueDate(null);
     onClose();
   };
 
-  // Calculate Due Date (7 days from now)
-  const today = new Date();
-  const dueDate = new Date(today);
-  dueDate.setDate(today.getDate() + 7);
-  const formattedDate = dueDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  const fallbackDueDate = useMemo(() => {
+    const today = new Date();
+    const calculated = new Date(today);
+    const defaultDays = user?.role === 'faculty' ? 30 : 7;
+    calculated.setDate(today.getDate() + defaultDays);
+    return calculated;
+  }, [user?.role]);
+
+  const effectiveDueDate = dueDate || fallbackDueDate;
+  const formattedDate = effectiveDueDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  const durationDays = Math.max(1, Math.round((effectiveDueDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
+  const durationLabel = `${durationDays} day${durationDays === 1 ? '' : 's'}`;
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
@@ -69,9 +106,15 @@ export default function BorrowModal({ isOpen, onClose, bookTitle, bookId }: Borr
             <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl mb-8 flex gap-3">
               <AlertCircle size={20} className="text-blue-600 shrink-0" />
               <p className="text-sm text-blue-700 font-medium leading-relaxed">
-                Standard period is <span className="font-bold">7 days</span>. Please return on or before <span className="font-bold">{formattedDate}</span>.
+                Standard period is <span className="font-bold">{durationLabel}</span>. Please return on or before <span className="font-bold">{formattedDate}</span>.
               </p>
             </div>
+
+            {error && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+                {error}
+              </div>
+            )}
 
             <button 
               onClick={handleConfirmBorrow}
@@ -132,7 +175,7 @@ export default function BorrowModal({ isOpen, onClose, bookTitle, bookId }: Borr
                   <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">Duration</label>
                   <div className="flex items-center gap-2 text-gray-700 font-bold">
                     <BookOpen size={16} />
-                    <span>7 Days</span>
+                    <span>{durationLabel}</span>
                   </div>
                 </div>
               </div>

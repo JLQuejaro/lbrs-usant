@@ -18,6 +18,12 @@ const ADMIN_ROUTES = [
   '/api/admin',
   '/api/users',
   '/api/account-requests',
+  '/api/stats',
+];
+
+// Staff-accessible admin routes
+const STAFF_ALLOWED_ROUTES = [
+  '/api/users',
 ];
 
 export function middleware(request: NextRequest) {
@@ -51,7 +57,8 @@ export function middleware(request: NextRequest) {
   
   // Check admin routes
   if (ADMIN_ROUTES.some(route => pathname.startsWith(route))) {
-    if (payload.role !== 'admin') {
+    const isStaffAllowed = payload.role === 'staff' && STAFF_ALLOWED_ROUTES.some(route => pathname.startsWith(route));
+    if (payload.role !== 'admin' && !isStaffAllowed) {
       return NextResponse.json(
         { error: 'Forbidden', message: 'Admin access required' },
         { status: 403 }

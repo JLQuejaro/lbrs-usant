@@ -154,10 +154,10 @@ reviews
 
 | Role | Email | Password |
 |------|-------|----------|
-| Student | john@usant.edu | (set during registration) |
-| Faculty | rob@usant.edu | (set during registration) |
-| Librarian | maria@usant.edu | (set during registration) |
-| Admin | admin@usant.edu | (set during registration) |
+| Student | john@usant.edu | student123 |
+| Faculty | rob@usant.edu | faculty123 |
+| Librarian | maria@usant.edu | librarian123 |
+| Admin | admin@usant.edu | admin123 |
 
 **⚠️ IMPORTANT**: Change all default passwords before production!
 

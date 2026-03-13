@@ -1,5 +1,4 @@
 import pool from './db';
-import { QueryResult } from 'pg';
 
 // ============================================================
 // TYPES
@@ -34,9 +33,14 @@ export interface Book {
   available_copies: number;
   status: string;
   location?: string;
+  color_theme?: string;
   borrow_count: number;
   views: number;
   featured: boolean;
+  date_added?: Date;
+  courses?: string[];
+  average_rating?: number | null;
+  total_reviews?: number | null;
 }
 
 export interface BorrowRecord {
@@ -47,6 +51,11 @@ export interface BorrowRecord {
   due_date: Date;
   returned_date?: Date;
   status: string;
+  title?: string;
+  author?: string;
+  color_theme?: string;
+  username?: string;
+  email?: string;
 }
 
 export interface AccountRequest {
@@ -59,6 +68,55 @@ export interface AccountRequest {
   department?: string;
   status: 'pending' | 'approved' | 'rejected';
   requested_at: Date;
+  id_document_path?: string;
+  reviewed_by?: string;
+  reviewed_at?: Date;
+  review_notes?: string;
+}
+
+export interface Journal {
+  journal_id: number;
+  title: string;
+  publisher: string;
+  subject: string;
+  impact_factor: number | null;
+  access_url: string | null;
+  journal_type: 'Journal' | 'Reference';
+  created_at: Date;
+}
+
+export interface ReadingList {
+  reading_list_id: number;
+  title: string;
+  faculty_id: string;
+  description?: string;
+  student_count: number;
+  is_active: boolean;
+  created_at: Date;
+  updated_at: Date;
+  book_ids?: number[];
+}
+
+export interface Notification {
+  notification_id: number;
+  user_id: string;
+  title: string;
+  message: string;
+  notification_type: 'availability' | 'reminder' | 'system';
+  book_id?: number | null;
+  is_read: boolean;
+  created_at: Date;
+}
+
+export interface Review {
+  review_id: number;
+  book_id: number;
+  user_id: string | null;
+  user_name: string;
+  rating: number;
+  comment?: string | null;
+  created_at: Date;
+  updated_at: Date;
 }
 
 // ============================================================
@@ -141,38 +199,100 @@ export async function getAllUsers(): Promise<User[]> {
 // ============================================================
 
 export async function getAllBooks(limit = 100): Promise<Book[]> {
-  const result = await pool.query('SELECT * FROM books ORDER BY title LIMIT $1', [limit]);
+  const result = await pool.query(
+    `SELECT b.*,
+            MAX(bs.average_rating) AS average_rating,
+            MAX(bs.total_reviews) AS total_reviews,
+            COALESCE(array_agg(bc.course_name) FILTER (WHERE bc.course_name IS NOT NULL), '{}') AS courses
+     FROM books b
+     LEFT JOIN book_statistics_view bs ON bs.book_id = b.book_id
+     LEFT JOIN book_courses bc ON bc.book_id = b.book_id
+     GROUP BY b.book_id
+     ORDER BY b.title
+     LIMIT $1`,
+    [limit]
+  );
   return result.rows;
 }
 
 export async function getBookById(bookId: number): Promise<Book | null> {
-  const result = await pool.query('SELECT * FROM books WHERE book_id = $1', [bookId]);
+  const result = await pool.query(
+    `SELECT b.*,
+            MAX(bs.average_rating) AS average_rating,
+            MAX(bs.total_reviews) AS total_reviews,
+            COALESCE(array_agg(bc.course_name) FILTER (WHERE bc.course_name IS NOT NULL), '{}') AS courses
+     FROM books b
+     LEFT JOIN book_statistics_view bs ON bs.book_id = b.book_id
+     LEFT JOIN book_courses bc ON bc.book_id = b.book_id
+     WHERE b.book_id = $1
+     GROUP BY b.book_id`,
+    [bookId]
+  );
   return result.rows[0] || null;
 }
 
 export async function searchBooks(searchTerm: string): Promise<Book[]> {
   const result = await pool.query(
-    `SELECT * FROM books 
-     WHERE title ILIKE $1 OR author ILIKE $1 OR genre ILIKE $1
-     ORDER BY title`,
+    `SELECT b.*,
+            MAX(bs.average_rating) AS average_rating,
+            MAX(bs.total_reviews) AS total_reviews,
+            COALESCE(array_agg(bc.course_name) FILTER (WHERE bc.course_name IS NOT NULL), '{}') AS courses
+     FROM books b
+     LEFT JOIN book_statistics_view bs ON bs.book_id = b.book_id
+     LEFT JOIN book_courses bc ON bc.book_id = b.book_id
+     WHERE b.title ILIKE $1 OR b.author ILIKE $1 OR b.genre ILIKE $1
+     GROUP BY b.book_id
+     ORDER BY b.title`,
     [`%${searchTerm}%`]
   );
   return result.rows;
 }
 
 export async function getBooksByGenre(genre: string): Promise<Book[]> {
-  const result = await pool.query('SELECT * FROM books WHERE genre = $1 ORDER BY title', [genre]);
+  const result = await pool.query(
+    `SELECT b.*,
+            MAX(bs.average_rating) AS average_rating,
+            MAX(bs.total_reviews) AS total_reviews,
+            COALESCE(array_agg(bc.course_name) FILTER (WHERE bc.course_name IS NOT NULL), '{}') AS courses
+     FROM books b
+     LEFT JOIN book_statistics_view bs ON bs.book_id = b.book_id
+     LEFT JOIN book_courses bc ON bc.book_id = b.book_id
+     WHERE b.genre = $1
+     GROUP BY b.book_id
+     ORDER BY b.title`,
+    [genre]
+  );
   return result.rows;
 }
 
 export async function getFeaturedBooks(): Promise<Book[]> {
-  const result = await pool.query('SELECT * FROM books WHERE featured = true ORDER BY title');
+  const result = await pool.query(
+    `SELECT b.*,
+            MAX(bs.average_rating) AS average_rating,
+            MAX(bs.total_reviews) AS total_reviews,
+            COALESCE(array_agg(bc.course_name) FILTER (WHERE bc.course_name IS NOT NULL), '{}') AS courses
+     FROM books b
+     LEFT JOIN book_statistics_view bs ON bs.book_id = b.book_id
+     LEFT JOIN book_courses bc ON bc.book_id = b.book_id
+     WHERE b.featured = true
+     GROUP BY b.book_id
+     ORDER BY b.title`
+  );
   return result.rows;
 }
 
 export async function getNewAcquisitions(limit = 10): Promise<Book[]> {
   const result = await pool.query(
-    'SELECT * FROM books ORDER BY date_added DESC LIMIT $1',
+    `SELECT b.*,
+            MAX(bs.average_rating) AS average_rating,
+            MAX(bs.total_reviews) AS total_reviews,
+            COALESCE(array_agg(bc.course_name) FILTER (WHERE bc.course_name IS NOT NULL), '{}') AS courses
+     FROM books b
+     LEFT JOIN book_statistics_view bs ON bs.book_id = b.book_id
+     LEFT JOIN book_courses bc ON bc.book_id = b.book_id
+     GROUP BY b.book_id
+     ORDER BY b.date_added DESC
+     LIMIT $1`,
     [limit]
   );
   return result.rows;
@@ -264,13 +384,13 @@ export async function returnBook(borrowId: number): Promise<BorrowRecord | null>
     await client.query('ROLLBACK');
     throw error;
   } finally {
-    client.release;
+    client.release();
   }
 }
 
 export async function getActiveBorrowsByUserId(userId: string): Promise<BorrowRecord[]> {
   const result = await pool.query(
-    `SELECT br.*, b.title, b.author 
+    `SELECT br.*, b.title, b.author, b.color_theme
      FROM borrow_records br
      JOIN books b ON br.book_id = b.book_id
      WHERE br.user_id = $1 AND br.status = 'active'
@@ -282,7 +402,7 @@ export async function getActiveBorrowsByUserId(userId: string): Promise<BorrowRe
 
 export async function getBorrowHistoryByUserId(userId: string): Promise<BorrowRecord[]> {
   const result = await pool.query(
-    `SELECT br.*, b.title, b.author 
+    `SELECT br.*, b.title, b.author, b.color_theme
      FROM borrow_records br
      JOIN books b ON br.book_id = b.book_id
      WHERE br.user_id = $1
@@ -294,7 +414,7 @@ export async function getBorrowHistoryByUserId(userId: string): Promise<BorrowRe
 
 export async function getOverdueBorrows(): Promise<BorrowRecord[]> {
   const result = await pool.query(
-    `SELECT br.*, b.title, b.author, u.username, u.email
+    `SELECT br.*, b.title, b.author, b.color_theme, u.username, u.email
      FROM borrow_records br
      JOIN books b ON br.book_id = b.book_id
      JOIN users u ON br.user_id = u.user_id
@@ -392,4 +512,71 @@ export async function getDatabaseStatistics() {
     activeBorrows: parseInt(activeBorrows.rows[0].count, 10),
     pendingRequests: parseInt(pendingRequests.rows[0].count, 10),
   };
+}
+
+// ============================================================
+// JOURNALS
+// ============================================================
+
+export async function getJournals(subject?: string): Promise<Journal[]> {
+  if (subject) {
+    const result = await pool.query(
+      'SELECT * FROM journals WHERE subject = $1 ORDER BY title',
+      [subject]
+    );
+    return result.rows;
+  }
+
+  const result = await pool.query('SELECT * FROM journals ORDER BY title');
+  return result.rows;
+}
+
+// ============================================================
+// READING LISTS
+// ============================================================
+
+export async function getReadingListsByFacultyId(facultyId: string): Promise<ReadingList[]> {
+  const result = await pool.query(
+    `SELECT rl.*,
+            COALESCE(array_agg(rlb.book_id) FILTER (WHERE rlb.book_id IS NOT NULL), '{}') AS book_ids
+     FROM reading_lists rl
+     LEFT JOIN reading_list_books rlb ON rlb.reading_list_id = rl.reading_list_id
+     WHERE rl.faculty_id = $1
+     GROUP BY rl.reading_list_id
+     ORDER BY rl.created_at DESC`,
+    [facultyId]
+  );
+  return result.rows;
+}
+
+// ============================================================
+// NOTIFICATIONS
+// ============================================================
+
+export async function getNotificationsByUserId(userId: string, unreadOnly = false): Promise<Notification[]> {
+  if (unreadOnly) {
+    const result = await pool.query(
+      'SELECT * FROM notifications WHERE user_id = $1 AND is_read = false ORDER BY created_at DESC',
+      [userId]
+    );
+    return result.rows;
+  }
+
+  const result = await pool.query(
+    'SELECT * FROM notifications WHERE user_id = $1 ORDER BY created_at DESC',
+    [userId]
+  );
+  return result.rows;
+}
+
+// ============================================================
+// REVIEWS
+// ============================================================
+
+export async function getReviewsByBookId(bookId: number): Promise<Review[]> {
+  const result = await pool.query(
+    'SELECT * FROM reviews WHERE book_id = $1 ORDER BY created_at DESC',
+    [bookId]
+  );
+  return result.rows;
 }

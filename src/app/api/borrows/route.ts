@@ -7,6 +7,23 @@ import {
   getOverdueBorrows 
 } from '@/app/lib/db-repository';
 
+function mapBorrow(record: any) {
+  return {
+    id: record.borrow_id,
+    userId: record.user_id,
+    bookId: record.book_id,
+    title: record.title || record.book_title,
+    author: record.author,
+    color: record.color_theme,
+    borrowedDate: record.borrowed_date,
+    dueDate: record.due_date,
+    returnedDate: record.returned_date,
+    status: record.status,
+    username: record.username,
+    email: record.email,
+  };
+}
+
 /**
  * GET /api/borrows
  * Get borrow records for the authenticated user
@@ -50,7 +67,7 @@ export async function GET(request: NextRequest) {
     }
     
     return NextResponse.json(
-      { borrows, count: borrows.length },
+      { borrows: borrows.map(mapBorrow), count: borrows.length },
       { status: 200 }
     );
     
@@ -102,7 +119,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { 
         message: 'Book borrowed successfully',
-        borrow,
+        borrow: mapBorrow(borrow),
         dueDate: borrow.due_date,
       },
       { status: 201 }
@@ -153,7 +170,7 @@ export async function PUT(request: NextRequest) {
     }
     
     return NextResponse.json(
-      { message: 'Book returned successfully', borrow },
+      { message: 'Book returned successfully', borrow: mapBorrow(borrow) },
       { status: 200 }
     );
     

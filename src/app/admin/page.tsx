@@ -7,17 +7,89 @@ import {
   Clock, TrendingUp, BarChart3, FileText, Settings, Server, Lock, CheckCircle,
   XCircle, FileCheck, UserCheck, Hourglass, Eye, Download
 } from 'lucide-react';
-import { useState } from 'react';
-import { ALL_BOOKS, MOCK_USERS, MOCK_ACCOUNT_REQUESTS, AccountRequest } from '@/app/lib/mockData';
+import { useEffect, useState } from 'react';
+import { useAuth } from '@/app/contexts/AuthContext';
+
+interface UiUser {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  isActive: boolean;
+}
+
+interface UiAccountRequest {
+  id: string;
+  name: string;
+  email: string;
+  requestedRole: string;
+  userType: string;
+  course?: string;
+  department?: string;
+  status: 'pending' | 'approved' | 'rejected';
+  requestedAt: string;
+  reviewedBy?: string;
+  reviewedAt?: string;
+  reviewNotes?: string;
+  idDocument?: string;
+}
+
+interface Stats {
+  totalUsers: number;
+  totalBooks: number;
+  activeBorrows: number;
+  pendingRequests: number;
+}
 
 export default function AdminPanel() {
+  const { token } = useAuth();
   const [activeTab, setActiveTab] = useState<'Users' | 'Account Requests' | 'Audit Logs' | 'System' | 'Analytics'>('Users');
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedRequest, setSelectedRequest] = useState<AccountRequest | null>(null);
+  const [selectedRequest, setSelectedRequest] = useState<UiAccountRequest | null>(null);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [reviewAction, setReviewAction] = useState<'approve' | 'reject' | null>(null);
   const [reviewNotes, setReviewNotes] = useState('');
   const [requestFilter, setRequestFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('pending');
+  const [users, setUsers] = useState<UiUser[]>([]);
+  const [accountRequests, setAccountRequests] = useState<UiAccountRequest[]>([]);
+  const [stats, setStats] = useState<Stats | null>(null);
+
+  useEffect(() => {
+    if (!token) return;
+
+    let isMounted = true;
+    const loadAdminData = async () => {
+      try {
+        const [usersRes, requestsRes, statsRes] = await Promise.all([
+          fetch('/api/users', { headers: { Authorization: `Bearer ${token}` } }),
+          fetch('/api/account-requests?status=all', { headers: { Authorization: `Bearer ${token}` } }),
+          fetch('/api/stats', { headers: { Authorization: `Bearer ${token}` } }),
+        ]);
+
+        if (usersRes.ok) {
+          const data = await usersRes.json();
+          if (isMounted) setUsers(data.users || []);
+        }
+
+        if (requestsRes.ok) {
+          const data = await requestsRes.json();
+          if (isMounted) setAccountRequests(data.requests || []);
+        }
+
+        if (statsRes.ok) {
+          const data = await statsRes.json();
+          if (isMounted) setStats(data.stats || null);
+        }
+      } catch (error) {
+        console.error('Failed to load admin data:', error);
+      }
+    };
+
+    loadAdminData();
+    return () => {
+      isMounted = false;
+    };
+  }, [token]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -33,7 +105,7 @@ export default function AdminPanel() {
           </div>
           <div className="flex bg-white p-1 rounded-xl shadow-sm border border-gray-200 overflow-x-auto no-scrollbar">
              {['Users', 'Account Requests', 'Analytics', 'Audit Logs', 'System'].map((tab) => {
-               const pendingCount = tab === 'Account Requests' ? MOCK_ACCOUNT_REQUESTS.filter(r => r.status === 'pending').length : 0;
+               const pendingCount = tab === 'Account Requests' ? accountRequests.filter(r => r.status === 'pending').length : 0;
                return (
                  <button
                    key={tab}
@@ -58,8 +130,8 @@ export default function AdminPanel() {
 
         {/* Top Stats Row */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
-          <StatCard icon={<Users size={24} className="text-blue-600" />} label="Total Users" value={MOCK_USERS.length.toString()} color="bg-blue-50" />
-          <StatCard icon={<Database size={24} className="text-purple-600" />} label="Total Books" value={ALL_BOOKS.length.toString()} color="bg-purple-50" />
+          <StatCard icon={<Users size={24} className="text-blue-600" />} label="Total Users" value={(stats?.totalUsers ?? users.length).toString()} color="bg-blue-50" />
+          <StatCard icon={<Database size={24} className="text-purple-600" />} label="Total Books" value={(stats?.totalBooks ?? 0).toString()} color="bg-purple-50" />
           <StatCard icon={<Activity size={24} className="text-orange-600" />} label="System Load" value="12%" color="bg-orange-50" />
           <StatCard icon={<Shield size={24} className="text-green-600" />} label="Security" value="Active" color="bg-green-50" />
         </div>
@@ -98,7 +170,7 @@ export default function AdminPanel() {
                    </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                   {MOCK_USERS.map((user) => (
+                   {users.map((user) => (
                       <tr key={user.id} className="hover:bg-gray-50 transition">
                          <td className="px-6 py-4">
                             <div className="font-bold text-gray-900">{user.name}</div>
@@ -114,8 +186,8 @@ export default function AdminPanel() {
                             </span>
                          </td>
                          <td className="px-6 py-4">
-                            <span className="flex items-center gap-1.5 text-xs font-bold text-green-600">
-                               <span className="w-2 h-2 rounded-full bg-green-500"></span> Active
+                            <span className={`flex items-center gap-1.5 text-xs font-bold ${user.isActive ? 'text-green-600' : 'text-gray-400'}`}>
+                               <span className={`w-2 h-2 rounded-full ${user.isActive ? 'bg-green-500' : 'bg-gray-300'}`}></span> {user.isActive ? 'Active' : 'Inactive'}
                             </span>
                          </td>
                          <td className="px-6 py-4 text-right">
@@ -139,25 +211,25 @@ export default function AdminPanel() {
               <StatCard 
                 icon={<Hourglass size={24} className="text-amber-600" />} 
                 label="Pending Review" 
-                value={MOCK_ACCOUNT_REQUESTS.filter(r => r.status === 'pending').length.toString()} 
+                value={accountRequests.filter(r => r.status === 'pending').length.toString()} 
                 color="bg-amber-50" 
               />
               <StatCard 
                 icon={<CheckCircle size={24} className="text-green-600" />} 
                 label="Approved" 
-                value={MOCK_ACCOUNT_REQUESTS.filter(r => r.status === 'approved').length.toString()} 
+                value={accountRequests.filter(r => r.status === 'approved').length.toString()} 
                 color="bg-green-50" 
               />
               <StatCard 
                 icon={<XCircle size={24} className="text-red-600" />} 
                 label="Rejected" 
-                value={MOCK_ACCOUNT_REQUESTS.filter(r => r.status === 'rejected').length.toString()} 
+                value={accountRequests.filter(r => r.status === 'rejected').length.toString()} 
                 color="bg-red-50" 
               />
               <StatCard 
                 icon={<FileCheck size={24} className="text-blue-600" />} 
                 label="Total Requests" 
-                value={MOCK_ACCOUNT_REQUESTS.length.toString()} 
+                value={accountRequests.length.toString()} 
                 color="bg-blue-50" 
               />
             </div>
@@ -206,7 +278,7 @@ export default function AdminPanel() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {MOCK_ACCOUNT_REQUESTS.filter(req => {
+                  {accountRequests.filter(req => {
                     if (requestFilter !== 'all' && req.status !== requestFilter) return false;
                     if (searchTerm && !req.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
                         !req.email.toLowerCase().includes(searchTerm.toLowerCase())) return false;

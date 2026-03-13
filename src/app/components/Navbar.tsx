@@ -6,12 +6,11 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { MOCK_NOTIFICATIONS } from '@/app/lib/mockData';
 import LogoutConfirmationCard from './LogoutConfirmationCard';
 import { useAuth } from '@/app/contexts/AuthContext';
 
 export default function Navbar() {
-  const { user, logout } = useAuth();
+  const { user, token, logout } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [logoutText, setLogoutText] = useState("Logout");
@@ -20,13 +19,37 @@ export default function Navbar() {
 
   // Get user info from context or use defaults
   const userName = user?.username || 'User';
-  const userRole = user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'User';
+  const baseRole = user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'User';
+  const userRole = user?.role === 'staff' && user?.user_type_staff
+    ? user.user_type_staff
+    : baseRole;
 
   useEffect(() => {
-    // In a real app, this would fetch from an API
-    const unread = MOCK_NOTIFICATIONS.filter(n => !n.read).length;
-    setUnreadCount(unread);
-  }, []);
+    if (!token) {
+      setUnreadCount(0);
+      return;
+    }
+
+    let isMounted = true;
+    const loadUnread = async () => {
+      try {
+        const response = await fetch('/api/notifications?unread=true', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!response.ok) return;
+        const data = await response.json();
+        const count = data.count ?? data.notifications?.length ?? 0;
+        if (isMounted) setUnreadCount(count);
+      } catch (error) {
+        console.error('Failed to load notifications:', error);
+      }
+    };
+
+    loadUnread();
+    return () => {
+      isMounted = false;
+    };
+  }, [token]);
 
   const getDashboardLink = () => {
     if (user?.role === 'student') return '/student';

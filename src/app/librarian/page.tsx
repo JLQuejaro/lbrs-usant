@@ -7,15 +7,75 @@ import {
   Book as BookIcon, Users, Layers, Plus, Search, Edit, Trash2, CheckCircle, XCircle, 
   TrendingUp, FileText, ShoppingBag, Star, AlertCircle, BarChart3, Clock, ArrowRight 
 } from 'lucide-react';
-import { useState, useMemo } from 'react';
-import { ALL_BOOKS, MOCK_USERS, Book, User } from '@/app/lib/mockData';
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/app/contexts/AuthContext';
+
+interface Book {
+  id: number;
+  title: string;
+  author: string;
+  genre: string;
+  color: string;
+  rating?: number;
+  year: number;
+  stock: boolean;
+  courses: string[];
+  description?: string;
+  pages?: number;
+  status?: string;
+  reviewCount?: number;
+  dateAdded?: string;
+  borrowCount: number;
+  views: number;
+  featured?: boolean;
+  location?: string;
+}
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+}
 
 export default function LibrarianDashboard() {
   const [activeTab, setActiveTab] = useState<'Inventory' | 'Borrowing' | 'Reports' | 'Users' | 'Acquisition'>('Inventory');
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [books, setBooks] = useState<Book[]>(ALL_BOOKS);
-  const [users, setUsers] = useState<User[]>(MOCK_USERS);
+  const [books, setBooks] = useState<Book[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const { token } = useAuth();
+
+  useEffect(() => {
+    if (!token) return;
+
+    let isMounted = true;
+    const loadData = async () => {
+      try {
+        const [booksRes, usersRes] = await Promise.all([
+          fetch('/api/books?limit=1000', { headers: { Authorization: `Bearer ${token}` } }),
+          fetch('/api/users', { headers: { Authorization: `Bearer ${token}` } }),
+        ]);
+
+        if (booksRes.ok) {
+          const data = await booksRes.json();
+          if (isMounted) setBooks(data.books || []);
+        }
+
+        if (usersRes.ok) {
+          const data = await usersRes.json();
+          if (isMounted) setUsers(data.users || []);
+        }
+      } catch (error) {
+        console.error('Failed to load librarian data:', error);
+      }
+    };
+
+    loadData();
+    return () => {
+      isMounted = false;
+    };
+  }, [token]);
 
   const handleAddBook = (newBook: any) => {
     setBooks([newBook, ...books]);

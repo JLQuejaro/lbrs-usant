@@ -12,19 +12,15 @@
 
 INSERT INTO users (user_id, username, email, password_hash, role, user_type_admin, approval_status, is_active)
 VALUES 
-    ('00000000-0000-0000-0000-000000000008', 'Admin User', 'admin@usant.edu', '$2b$10$rHk9zX5vK8mN2pQ7wY3tLe4fG6hJ8iK0mO1nP2qR3sT4uV5wX6yZ7', 'admin', 'System Administrator', 'approved', true);
+    ('00000000-0000-0000-0000-000000000008', 'Admin User', 'admin@usant.edu', '$2b$10$UyPoViHOr./62um1VfbyPucyMrcWWoLDFQMSdyd0FBxKLg3Pmj6t6', 'admin', 'System Administrator', 'approved', true);
 
 -- ============================================================
--- SEED: Students
+-- SEED: Student
 -- ============================================================
 
 INSERT INTO users (user_id, username, email, password_hash, role, user_type_student, course, year_level, approval_status, is_active)
 VALUES 
-    ('00000000-0000-0000-0000-000000000001', 'John Student', 'john@usant.edu', '$2b$10$placeholder_hash', 'student', 'Undergraduate Student', 'Computer Science', '4th Year', 'approved', true),
-    ('00000000-0000-0000-0000-000000000002', 'Alice Smith', 'alice@usant.edu', '$2b$10$placeholder_hash', 'student', 'Undergraduate Student', 'Computer Science', '3rd Year', 'approved', true),
-    ('00000000-0000-0000-0000-000000000003', 'Bob Brown', 'bob@usant.edu', '$2b$10$placeholder_hash', 'student', 'Graduate Student (Master''s)', 'Information Tech', '2nd Year', 'approved', true),
-    ('00000000-0000-0000-0000-000000000004', 'Charlie Davis', 'charlie@usant.edu', '$2b$10$placeholder_hash', 'student', 'Undergraduate Student', 'Computer Science', '2nd Year', 'approved', true),
-    ('00000000-0000-0000-0000-000000000005', 'Diana Prince', 'diana@usant.edu', '$2b$10$placeholder_hash', 'student', 'Undergraduate Student', 'Engineering', '3rd Year', 'approved', true);
+    ('00000000-0000-0000-0000-000000000001', 'John Student', 'john@usant.edu', '$2b$10$WNneULUb8dT3l/LCggiK2e3r6WcIBFK07rWJmf0IKSngR2K97kqhC', 'student', 'Undergraduate Student', 'Computer Science', '4th Year', 'approved', true);
 
 -- ============================================================
 -- SEED: Faculty
@@ -32,7 +28,7 @@ VALUES
 
 INSERT INTO users (user_id, username, email, password_hash, role, user_type_faculty, department, approval_status, is_active)
 VALUES 
-    ('00000000-0000-0000-0000-000000000006', 'Dr. Robert Johnson', 'rob@usant.edu', '$2b$10$placeholder_hash', 'faculty', 'Professor', 'Computer Science', 'approved', true);
+    ('00000000-0000-0000-0000-000000000006', 'Dr. Robert Johnson', 'rob@usant.edu', '$2b$10$N6dpAt/3KpgtM8Fbm4MBvuzAVF8xa70RW7Yzs0IkyY5akBYtGeyIK', 'faculty', 'Professor', 'Computer Science', 'approved', true);
 
 -- ============================================================
 -- SEED: Staff (Librarian)
@@ -40,19 +36,19 @@ VALUES
 
 INSERT INTO users (user_id, username, email, password_hash, role, user_type_staff, approval_status, is_active)
 VALUES 
-    ('00000000-0000-0000-0000-000000000007', 'Maria Santos', 'maria@usant.edu', '$2b$10$placeholder_hash', 'staff', 'Librarian', 'approved', true);
+    ('00000000-0000-0000-0000-000000000007', 'Maria Santos', 'maria@usant.edu', '$2b$10$FeIUVez5/DJPThsypuWIweRvk8ketZDyxO/ni2J6xDq.FvNOrkHXS', 'staff', 'Librarian', 'approved', true);
 
 -- ============================================================
 -- SEED: Account Requests (Pending/Approved/Rejected)
 -- ============================================================
 
-INSERT INTO account_requests (request_id, full_name, email, requested_role, user_type, course, status, requested_at, id_document)
+INSERT INTO account_requests (request_id, full_name, email, requested_role, user_type, course, status, requested_at, id_document_path)
 VALUES 
     ('550e8400-e29b-41d4-a716-446655440001', 'Emily Wilson', 'emily.wilson@usant.edu', 'student', 'Undergraduate Student', 'Computer Science', 'pending', '2026-02-20 09:15:00', 'student_id_001.pdf'),
     ('550e8400-e29b-41d4-a716-446655440002', 'Dr. Michael Chen', 'michael.chen@usant.edu', 'faculty', 'Professor', NULL, 'pending', '2026-02-19 14:30:00', 'faculty_credentials_002.pdf'),
     ('550e8400-e29b-41d4-a716-446655440003', 'Sarah Martinez', 'sarah.martinez@usant.edu', 'student', 'Graduate Student (PhD)', 'Engineering', 'pending', '2026-02-18 11:45:00', 'student_id_003.pdf');
 
-INSERT INTO account_requests (request_id, full_name, email, requested_role, user_type, department, status, requested_at, reviewed_by, reviewed_at, review_notes, id_document)
+INSERT INTO account_requests (request_id, full_name, email, requested_role, user_type, department, status, requested_at, reviewed_by, reviewed_at, review_notes, id_document_path)
 VALUES 
     ('550e8400-e29b-41d4-a716-446655440004', 'Prof. James Anderson', 'james.anderson@usant.edu', 'faculty', 'Lecturer', 'Engineering', 'approved', '2026-02-15 08:00:00', 
      '00000000-0000-0000-0000-000000000008', '2026-02-16 10:30:00', 'Verified faculty credentials. Approved for Engineering department.', 'faculty_credentials_004.pdf'),
@@ -167,8 +163,8 @@ VALUES
 
 INSERT INTO borrow_records (user_id, book_id, borrowed_date, due_date, status)
 VALUES 
-    ('00000000-0000-0000-0000-000000000002', 1, '2025-01-01', '2025-01-08', 'returned'),
-    ('00000000-0000-0000-0000-000000000002', 2, '2025-01-05', '2025-01-12', 'returned'),
+    ('00000000-0000-0000-0000-000000000001', 1, '2025-01-01', '2025-01-08', 'returned'),
+    ('00000000-0000-0000-0000-000000000001', 2, '2025-01-05', '2025-01-12', 'returned'),
     ('00000000-0000-0000-0000-000000000001', 3, '2026-02-15', '2026-02-22', 'active');
 
 -- ============================================================
@@ -179,7 +175,7 @@ INSERT INTO notifications (user_id, title, message, notification_type, book_id, 
 VALUES 
     ('00000000-0000-0000-0000-000000000001', 'Book Available', 'The book "The Pragmatic Programmer" is now available for borrowing.', 'availability', 3, false),
     ('00000000-0000-0000-0000-000000000001', 'Return Reminder', 'Your borrowed book "The Pragmatic Programmer" is due in 3 days.', 'reminder', 3, false),
-    ('00000000-0000-0000-0000-000000000002', 'System Maintenance', 'The library system will undergo maintenance on Feb 25, 2026.', 'system', NULL, true);
+    ('00000000-0000-0000-0000-000000000001', 'System Maintenance', 'The library system will undergo maintenance on Feb 25, 2026.', 'system', NULL, true);
 
 -- ============================================================
 -- SEED: Reviews
@@ -187,10 +183,9 @@ VALUES
 
 INSERT INTO reviews (book_id, user_id, user_name, rating, comment)
 VALUES 
-    (1, '00000000-0000-0000-0000-000000000002', 'Alice Smith', 5.00, 'Essential for every CS student. Comprehensive and well-explained.'),
-    (1, '00000000-0000-0000-0000-000000000003', 'Bob Brown', 4.50, 'Great reference book, though quite dense.'),
+    (1, '00000000-0000-0000-0000-000000000001', 'John Student', 5.00, 'Essential for every CS student. Comprehensive and well-explained.'),
     (2, '00000000-0000-0000-0000-000000000001', 'John Student', 5.00, 'Changed the way I write code. Highly recommended!'),
-    (4, '00000000-0000-0000-0000-000000000004', 'Charlie Davis', 4.00, 'Classic design patterns. Still relevant today.');
+    (4, '00000000-0000-0000-0000-000000000001', 'John Student', 4.00, 'Classic design patterns. Still relevant today.');
 
 -- ============================================================
 -- VERIFICATION QUERIES

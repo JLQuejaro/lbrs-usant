@@ -4,7 +4,29 @@ import Navbar from '@/app/components/Navbar';
 import { Book, Layers, Search, Clock, SlidersHorizontal, RotateCcw, X, History, Sparkles, ChevronDown, Users, Heart, Bell, Library, ShieldCheck, MapPin, GraduationCap } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ALL_BOOKS, getCollaborativeRecommendations, getLocalWishlist, toggleLocalWishlist, MOCK_NOTIFICATIONS, getLocalBorrows } from '@/app/lib/mockData';
+import { getLocalWishlist, toggleLocalWishlist } from '@/app/lib/localWishlist';
+import { useAuth } from '@/app/contexts/AuthContext';
+
+interface Book {
+  id: number;
+  title: string;
+  author: string;
+  genre: string;
+  color: string;
+  rating?: number;
+  year: number;
+  stock: boolean;
+  courses: string[];
+  description?: string;
+  pages?: number;
+  status?: string;
+  reviewCount?: number;
+  dateAdded?: string;
+  borrowCount: number;
+  views: number;
+  featured?: boolean;
+  location?: string;
+}
 
 const GENRES = ['All', 'Computer Science', 'Software Engineering', 'Fiction', 'History', 'Finance', 'Self-Help', 'Engineering', 'Education', 'Psychology'];
 const COURSES = [
@@ -45,8 +67,10 @@ const COURSES = [
 ];
 
 export default function StudentDashboard() {
+  const { user, token } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(true);
+  const [books, setBooks] = useState<Book[]>([]);
   
   // Wishlist & Notification Stats
   const [wishlist, setWishlist] = useState<number[]>([]);
@@ -58,10 +82,10 @@ export default function StudentDashboard() {
   const [showRecent, setShowRecent] = useState(false);
 
   // User Course State (For Recommendations)
-  const [userCourse, setUserCourse] = useState('Computer Science');
+  const [userCourse, setUserCourse] = useState(user?.course || 'Computer Science');
 
   // Collaborative Recommendations
-  const [collabBooks, setCollabBooks] = useState(getCollaborativeRecommendations('1', 4, userCourse));
+  const [collabBooks, setCollabBooks] = useState<Book[]>([]);
 
   // Filter Values
   const [selectedGenre, setSelectedGenre] = useState('All');
@@ -69,10 +93,12 @@ export default function StudentDashboard() {
   const [inStockOnly, setInStockOnly] = useState(false);
   const [sortBy, setSortBy] = useState('Relevance');
 
-  // Update collaborative recommendations when course changes
+  // Update user course when profile loads
   useEffect(() => {
-     setCollabBooks(getCollaborativeRecommendations('1', 4, userCourse));
-  }, [userCourse]);
+    if (user?.course) {
+      setUserCourse(user.course);
+    }
+  }, [user?.course]);
 
   // Load Initial Data on Mount
   useEffect(() => {
@@ -81,9 +107,45 @@ export default function StudentDashboard() {
       setRecentSearches(JSON.parse(saved));
     }
     setWishlist(getLocalWishlist());
-    setUnreadCount(MOCK_NOTIFICATIONS.filter(n => !n.read).length);
-    setBorrowCount(getLocalBorrows().length);
   }, []);
+
+  useEffect(() => {
+    if (!token) return;
+
+    let isMounted = true;
+
+    const loadData = async () => {
+      try {
+        const [booksRes, notificationsRes, borrowsRes] = await Promise.all([
+          fetch('/api/books?limit=1000', { headers: { Authorization: `Bearer ${token}` } }),
+          fetch('/api/notifications?unread=true', { headers: { Authorization: `Bearer ${token}` } }),
+          fetch('/api/borrows', { headers: { Authorization: `Bearer ${token}` } }),
+        ]);
+
+        if (booksRes.ok) {
+          const data = await booksRes.json();
+          if (isMounted) setBooks(data.books || []);
+        }
+
+        if (notificationsRes.ok) {
+          const data = await notificationsRes.json();
+          if (isMounted) setUnreadCount(data.count ?? data.notifications?.length ?? 0);
+        }
+
+        if (borrowsRes.ok) {
+          const data = await borrowsRes.json();
+          if (isMounted) setBorrowCount(data.count ?? data.borrows?.length ?? 0);
+        }
+      } catch (error) {
+        console.error('Failed to load student dashboard data:', error);
+      }
+    };
+
+    loadData();
+    return () => {
+      isMounted = false;
+    };
+  }, [token]);
 
   const handleToggleWishlist = (e: React.MouseEvent, bookId: number) => {
     e.preventDefault();
@@ -113,17 +175,17 @@ export default function StudentDashboard() {
   };
 
   // Filter Logic
-  const filteredBooks = ALL_BOOKS.filter(book => {
+  const filteredBooks = books.filter(book => {
     const matchesSearch = book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           book.author.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesGenre = selectedGenre === 'All' || book.genre === selectedGenre;
-    const matchesYear = book.year <= maxYear;
+    const matchesYear = !book.year || book.year <= maxYear;
     const matchesStock = inStockOnly ? book.stock : true;
 
     return matchesSearch && matchesGenre && matchesYear && matchesStock;
   }).sort((a, b) => {
-    if (sortBy === 'Newest') return b.year - a.year;
-    if (sortBy === 'Oldest') return a.year - b.year;
+    if (sortBy === 'Newest') return (b.year || 0) - (a.year || 0);
+    if (sortBy === 'Oldest') return (a.year || 0) - (b.year || 0);
     if (sortBy === 'Title') return a.title.localeCompare(b.title);
     return 0;
   });
@@ -137,7 +199,18 @@ export default function StudentDashboard() {
   };
 
   // Recommendations Logic
-  const recommendedBooks = ALL_BOOKS.filter(book => book.courses?.includes(userCourse)).slice(0, 4);
+  const recommendedBooks = books
+    .filter(book => book.courses?.includes(userCourse))
+    .sort((a, b) => b.views - a.views)
+    .slice(0, 4);
+
+  useEffect(() => {
+    const trending = books
+      .filter(book => book.courses?.includes(userCourse))
+      .sort((a, b) => b.borrowCount - a.borrowCount)
+      .slice(0, 4);
+    setCollabBooks(trending);
+  }, [books, userCourse]);
 
   return (
     <div className="min-h-screen bg-gray-50">
