@@ -330,14 +330,7 @@ export default function AuthPage() {
 
               {/* Password */}
               <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="block text-sm font-semibold text-gray-700">Password</label>
-                  {!isRegistering && (
-                    <button type="button" className="text-xs text-usant-red hover:underline font-medium">
-                      Forgot?
-                    </button>
-                  )}
-                </div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Password</label>
                 <input
                   required
                   type="password"
@@ -526,6 +519,15 @@ export default function AuthPage() {
                       <option>5th Year</option>
                     </select>
                   </div>
+                </div>
+              )}
+
+              {/* Forgot Password Link (Login Only) */}
+              {!isRegistering && (
+                <div className="text-right">
+                  <button type="button" className="text-sm text-usant-red hover:underline font-medium">
+                    Forgot Password?
+                  </button>
                 </div>
               )}
 
