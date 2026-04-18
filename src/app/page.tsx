@@ -19,6 +19,7 @@ export default function AuthPage() {
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<UserRole>('student');
   const [userType, setUserType] = useState<UserType>(userTypesByRole['student'][0]);
+  const [emailError, setEmailError] = useState('');
 
   const [fullName, setFullName] = useState('');
   const [course, setCourse] = useState('Computer Science');
@@ -27,6 +28,21 @@ export default function AuthPage() {
   const handleRoleChange = (newRole: UserRole) => {
     setRole(newRole);
     setUserType(userTypesByRole[newRole][0]);
+  };
+
+  const validateEmail = (email: string) => {
+    if (email && !email.toLowerCase().endsWith('@usant.edu.ph')) {
+      setEmailError('Only @usant.edu.ph email addresses are allowed');
+      return false;
+    }
+    setEmailError('');
+    return true;
+  };
+
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setEmail(value);
+    if (value) validateEmail(value);
   };
 
   const getRedirectPath = (role: string) => {
@@ -158,6 +174,9 @@ export default function AuthPage() {
             <p className="text-gray-500">
               {isRegistering ? 'Join USANT Library System' : 'Sign in to your account'}
             </p>
+            <p className="text-xs text-usant-red font-medium mt-2">
+              Only university emails ending in @usant.edu.ph are permitted
+            </p>
           </div>
 
           {/* Error Message */}
@@ -189,11 +208,16 @@ export default function AuthPage() {
               <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
               <input
                 type="email"
-                placeholder="you@gmail.com"
+                placeholder="you@usant.edu.ph"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-200 focus:ring-2 focus:ring-usant-red focus:outline-none transition-all"
+                onChange={handleEmailChange}
+                className={`w-full px-4 py-3 rounded-lg bg-gray-50 border ${
+                  emailError ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-usant-red'
+                } focus:ring-2 focus:outline-none transition-all`}
               />
+              {emailError && (
+                <p className="text-xs text-red-600 mt-1">{emailError}</p>
+              )}
             </div>
 
             {/* Password (Common) */}

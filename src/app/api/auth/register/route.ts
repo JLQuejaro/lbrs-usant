@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { hashPassword, generateToken } from '@/app/lib/auth';
 import { createUser, getUserByEmail } from '@/app/lib/db-repository';
+import { isValidUniversityEmail, getEmailDomainError, logUnauthorizedAttempt } from '@/app/lib/email-validation';
 
 /**
  * POST /api/auth/register
@@ -35,6 +36,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Bad Request', message: 'Invalid email format' },
         { status: 400 }
+      );
+    }
+    
+    // Domain validation
+    if (!isValidUniversityEmail(email)) {
+      logUnauthorizedAttempt(email, 'registration');
+      return NextResponse.json(
+        { error: 'Forbidden', message: getEmailDomainError() },
+        { status: 403 }
       );
     }
     

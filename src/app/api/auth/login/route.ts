@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyPassword, generateToken } from '@/app/lib/auth';
 import { getUserByEmail } from '@/app/lib/db-repository';
+import { isValidUniversityEmail, getEmailDomainError, logUnauthorizedAttempt } from '@/app/lib/email-validation';
 
 /**
  * POST /api/auth/login
@@ -16,6 +17,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Bad Request', message: 'Email and password are required' },
         { status: 400 }
+      );
+    }
+
+    // Domain validation
+    if (!isValidUniversityEmail(email)) {
+      logUnauthorizedAttempt(email, 'login');
+      return NextResponse.json(
+        { error: 'Forbidden', message: getEmailDomainError() },
+        { status: 403 }
       );
     }
 

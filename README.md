@@ -52,5 +52,6 @@ npm run build
 - [Prisma Migration Guide](./PRISMA_MIGRATION_GUIDE.md)
 - [Quickstart](./QUICKSTART.md)
 - [Authentication Guide](./AUTHENTICATION_GUIDE.md)
+- [Email Domain Policy](./EMAIL_DOMAIN_POLICY.md)
 
 Legacy SQL setup files remain in `database/` for archival reference only and are no longer the recommended setup path.
