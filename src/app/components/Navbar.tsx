@@ -25,13 +25,13 @@ export default function Navbar() {
     : baseRole;
 
   useEffect(() => {
-    if (!token) {
-      setUnreadCount(0);
-      return;
-    }
-
     let isMounted = true;
     const loadUnread = async () => {
+      if (!token) {
+        if (isMounted) setUnreadCount(0);
+        return;
+      }
+
       try {
         const response = await fetch('/api/notifications?unread=true', {
           headers: { Authorization: `Bearer ${token}` },
@@ -54,7 +54,7 @@ export default function Navbar() {
   const getDashboardLink = () => {
     if (user?.role === 'student') return '/student';
     if (user?.role === 'faculty') return '/faculty';
-    if (user?.role === 'staff' || user?.role === 'librarian') return '/librarian';
+    if (user?.role === 'staff') return '/librarian';
     if (user?.role === 'admin') return '/admin';
     return '/';
   };

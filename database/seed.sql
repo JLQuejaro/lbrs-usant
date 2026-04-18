@@ -1,6 +1,7 @@
 -- ============================================================
 -- USANT LBRS - Database Seed File
 -- ============================================================
+-- LEGACY SNAPSHOT: prefer `npm run db:seed`, which executes prisma/seed.js.
 -- WARNING: This file contains mock data for development only.
 -- DO NOT run in production environments.
 -- Backup your database before running this script.

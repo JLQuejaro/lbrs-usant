@@ -4,8 +4,13 @@ import Navbar from '@/app/components/Navbar';
 import { Book, Layers, Search, Clock, SlidersHorizontal, RotateCcw, X, History, Sparkles, ChevronDown, Users, Heart, Bell, Library, ShieldCheck, MapPin, GraduationCap } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { getLocalWishlist, toggleLocalWishlist } from '@/app/lib/localWishlist';
 import { useAuth } from '@/app/contexts/AuthContext';
+import {
+  addWishlistBook,
+  fetchWishlist,
+  removeWishlistBook,
+  syncLegacyWishlist,
+} from '@/app/lib/wishlist-client';
 
 interface Book {
   id: number;
@@ -106,21 +111,33 @@ export default function StudentDashboard() {
     if (saved) {
       setRecentSearches(JSON.parse(saved));
     }
-    setWishlist(getLocalWishlist());
   }, []);
 
   useEffect(() => {
-    if (!token) return;
+    if (!token) {
+      setWishlist([]);
+      return;
+    }
 
     let isMounted = true;
 
     const loadData = async () => {
       try {
+        await syncLegacyWishlist(token).catch((error) => {
+          console.error('Failed to migrate legacy wishlist:', error);
+        });
+
+        const wishlistPromise = fetchWishlist(token).catch((error) => {
+          console.error('Failed to load wishlist:', error);
+          return null;
+        });
+
         const [booksRes, notificationsRes, borrowsRes] = await Promise.all([
           fetch('/api/books?limit=1000', { headers: { Authorization: `Bearer ${token}` } }),
           fetch('/api/notifications?unread=true', { headers: { Authorization: `Bearer ${token}` } }),
           fetch('/api/borrows', { headers: { Authorization: `Bearer ${token}` } }),
         ]);
+        const wishlistData = await wishlistPromise;
 
         if (booksRes.ok) {
           const data = await booksRes.json();
@@ -136,6 +153,10 @@ export default function StudentDashboard() {
           const data = await borrowsRes.json();
           if (isMounted) setBorrowCount(data.count ?? data.borrows?.length ?? 0);
         }
+
+        if (wishlistData && isMounted) {
+          setWishlist(wishlistData.bookIds || []);
+        }
       } catch (error) {
         console.error('Failed to load student dashboard data:', error);
       }
@@ -147,11 +168,20 @@ export default function StudentDashboard() {
     };
   }, [token]);
 
-  const handleToggleWishlist = (e: React.MouseEvent, bookId: number) => {
+  const handleToggleWishlist = async (e: React.MouseEvent, bookId: number) => {
     e.preventDefault();
     e.stopPropagation();
-    const newWishlist = toggleLocalWishlist(bookId);
-    setWishlist(newWishlist);
+
+    if (!token) return;
+
+    try {
+      const newWishlist = wishlist.includes(bookId)
+        ? await removeWishlistBook(token, bookId)
+        : await addWishlistBook(token, bookId);
+      setWishlist(newWishlist);
+    } catch (error) {
+      console.error('Failed to update wishlist:', error);
+    }
   };
 
   const addToRecent = (term: string) => {

@@ -5,43 +5,38 @@ import { Star, Heart, ArrowLeft, Book as BookIcon, Trash2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getLocalWishlist, toggleLocalWishlist } from '@/app/lib/localWishlist';
 import { useAuth } from '@/app/contexts/AuthContext';
+import {
+  fetchWishlist,
+  removeWishlistBook,
+  syncLegacyWishlist,
+  WishlistBook,
+} from '@/app/lib/wishlist-client';
 
-interface Book {
-  id: number;
-  title: string;
-  author: string;
-  genre: string;
-  color: string;
-  rating?: number;
-  stock: boolean;
-}
+type Book = WishlistBook;
 
 export default function WishlistPage() {
   const router = useRouter();
-  const [wishlistIds, setWishlistIds] = useState<number[]>([]);
   const [books, setBooks] = useState<Book[]>([]);
   const { token } = useAuth();
-  
-  useEffect(() => {
-    setWishlistIds(getLocalWishlist());
-  }, []);
 
   useEffect(() => {
-    if (!token) return;
+    if (!token) {
+      setBooks([]);
+      return;
+    }
 
     let isMounted = true;
     const loadBooks = async () => {
       try {
-        const response = await fetch('/api/books?limit=1000', {
-          headers: { Authorization: `Bearer ${token}` },
+        await syncLegacyWishlist(token).catch((error) => {
+          console.error('Failed to migrate legacy wishlist:', error);
         });
-        if (!response.ok) return;
-        const data = await response.json();
-        if (isMounted) setBooks(data.books || []);
+
+        const wishlist = await fetchWishlist(token);
+        if (isMounted) setBooks(wishlist.books || []);
       } catch (error) {
-        console.error('Failed to load books:', error);
+        console.error('Failed to load wishlist:', error);
       }
     };
 
@@ -51,11 +46,15 @@ export default function WishlistPage() {
     };
   }, [token]);
 
-  const wishlistBooks = books.filter(book => wishlistIds.includes(book.id));
+  const handleRemove = async (bookId: number) => {
+    if (!token) return;
 
-  const handleRemove = (bookId: number) => {
-    const newWishlist = toggleLocalWishlist(bookId);
-    setWishlistIds(newWishlist);
+    try {
+      await removeWishlistBook(token, bookId);
+      setBooks((currentBooks) => currentBooks.filter((book) => book.id !== bookId));
+    } catch (error) {
+      console.error('Failed to remove wishlist item:', error);
+    }
   };
 
   return (
@@ -86,9 +85,9 @@ export default function WishlistPage() {
 
       <main className="max-w-7xl mx-auto px-8 -mt-16 pb-12 relative z-20">
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 min-h-[400px]">
-          {wishlistBooks.length > 0 ? (
+          {books.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {wishlistBooks.map(book => (
+              {books.map(book => (
                 <div key={book.id} className="flex gap-4 p-4 rounded-xl border border-gray-100 hover:border-usant-red/30 hover:shadow-md transition-all group">
                   <Link href={`/book/${book.id}`} className="flex gap-4 flex-1">
                     <div className={`w-24 h-32 ${book.color} rounded-lg shadow-md flex-shrink-0 flex items-center justify-center relative overflow-hidden`}>

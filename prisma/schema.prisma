@@ -1,0 +1,290 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  student
+  faculty
+  staff
+  admin
+
+  @@map("user_role")
+}
+
+enum StudentUserType {
+  UNDERGRADUATE_STUDENT @map("Undergraduate Student")
+  GRADUATE_STUDENT_MASTERS @map("Graduate Student (Master's)")
+  GRADUATE_STUDENT_PHD @map("Graduate Student (PhD)")
+  DISTANCE_ONLINE_LEARNER @map("Distance/Online Learner")
+
+  @@map("user_type_student")
+}
+
+enum FacultyUserType {
+  PROFESSOR @map("Professor")
+  LECTURER @map("Lecturer")
+  RESEARCHER @map("Researcher")
+
+  @@map("user_type_faculty")
+}
+
+enum StaffUserType {
+  ADMINISTRATIVE_STAFF @map("Administrative Staff")
+  TECHNICAL_SUPPORT_STAFF @map("Technical/Support Staff")
+  LIBRARIAN @map("Librarian")
+
+  @@map("user_type_staff")
+}
+
+enum AdminUserType {
+  SYSTEM_ADMINISTRATOR @map("System Administrator")
+
+  @@map("user_type_admin")
+}
+
+enum ApprovalStatus {
+  pending
+  approved
+  rejected
+
+  @@map("approval_status")
+}
+
+enum NotificationType {
+  availability
+  reminder
+  system
+
+  @@map("notification_type")
+}
+
+enum JournalEntryType {
+  JOURNAL @map("Journal")
+  REFERENCE @map("Reference")
+
+  @@map("journal_type")
+}
+
+model User {
+  id              String             @id @default(uuid()) @db.Uuid @map("user_id")
+  username        String             @db.VarChar(100)
+  email           String             @unique @db.VarChar(100)
+  passwordHash    String             @map("password_hash") @db.VarChar(255)
+  role            UserRole
+  studentType     StudentUserType?   @map("user_type_student")
+  facultyType     FacultyUserType?   @map("user_type_faculty")
+  staffType       StaffUserType?     @map("user_type_staff")
+  adminType       AdminUserType?     @map("user_type_admin")
+  course          String?            @db.VarChar(100)
+  yearLevel       String?            @map("year_level") @db.VarChar(20)
+  department      String?            @db.VarChar(100)
+  approvalStatus  ApprovalStatus     @default(pending) @map("approval_status")
+  isActive        Boolean            @default(true) @map("is_active")
+  createdAt       DateTime           @default(now()) @map("created_at")
+  updatedAt       DateTime           @updatedAt @map("updated_at")
+  lastLoginAt     DateTime?          @map("last_login_at")
+  reviewedById    String?            @map("reviewed_by") @db.Uuid
+  reviewedAt      DateTime?          @map("reviewed_at")
+  reviewNotes     String?            @map("review_notes")
+  reviewedBy      User?              @relation("UserReviews", fields: [reviewedById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  reviewedUsers   User[]             @relation("UserReviews")
+  accountReviews  AccountRequest[]   @relation("AccountRequestReviews")
+  readingLists    ReadingList[]
+  borrowRecords   BorrowRecord[]
+  notifications   Notification[]
+  reviews         Review[]
+  wishlistItems   WishlistItem[]
+
+  @@index([role], map: "idx_users_role")
+  @@index([approvalStatus], map: "idx_users_approval_status")
+  @@index([course], map: "idx_users_course")
+  @@index([department], map: "idx_users_department")
+  @@index([isActive], map: "idx_users_is_active")
+  @@map("users")
+}
+
+model AccountRequest {
+  id             String         @id @default(uuid()) @db.Uuid @map("request_id")
+  fullName       String         @map("full_name") @db.VarChar(100)
+  email          String         @unique @db.VarChar(100)
+  requestedRole  UserRole       @map("requested_role")
+  userType       String         @map("user_type") @db.VarChar(50)
+  course         String?        @db.VarChar(100)
+  department     String?        @db.VarChar(100)
+  yearLevel      String?        @map("year_level") @db.VarChar(20)
+  idDocumentPath String?        @map("id_document_path") @db.VarChar(255)
+  status         ApprovalStatus @default(pending)
+  requestedAt    DateTime       @default(now()) @map("requested_at")
+  reviewedById   String?        @map("reviewed_by") @db.Uuid
+  reviewedAt     DateTime?      @map("reviewed_at")
+  reviewNotes    String?        @map("review_notes")
+  reviewedBy     User?          @relation("AccountRequestReviews", fields: [reviewedById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([status], map: "idx_account_requests_status")
+  @@index([requestedAt], map: "idx_account_requests_requested_at")
+  @@map("account_requests")
+}
+
+model Book {
+  id              Int               @id @default(autoincrement()) @map("book_id")
+  title           String            @db.VarChar(255)
+  author          String            @db.VarChar(150)
+  genre           String            @db.VarChar(50)
+  description     String?
+  pages           Int?
+  publicationYear Int?              @map("publication_year")
+  stockQuantity   Int               @default(1) @map("stock_quantity")
+  availableCopies Int               @default(1) @map("available_copies")
+  status          String            @default("Available") @db.VarChar(20)
+  location        String?           @db.VarChar(100)
+  colorTheme      String?           @map("color_theme") @db.VarChar(30)
+  borrowCount     Int               @default(0) @map("borrow_count")
+  views           Int               @default(0)
+  featured        Boolean           @default(false)
+  dateAdded       DateTime          @default(dbgenerated("CURRENT_DATE")) @db.Date @map("date_added")
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
+  courses         BookCourse[]
+  borrowRecords   BorrowRecord[]
+  notifications   Notification[]
+  reviews         Review[]
+  readingLists    ReadingListBook[]
+  wishlistItems   WishlistItem[]
+
+  @@index([title], map: "idx_books_title")
+  @@index([author], map: "idx_books_author")
+  @@index([genre], map: "idx_books_genre")
+  @@index([status], map: "idx_books_status")
+  @@index([featured], map: "idx_books_featured")
+  @@index([dateAdded], map: "idx_books_date_added")
+  @@map("books")
+}
+
+model BookCourse {
+  bookId      Int    @map("book_id")
+  courseName  String @map("course_name") @db.VarChar(100)
+  book        Book   @relation(fields: [bookId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([bookId, courseName])
+  @@index([courseName], map: "idx_book_courses_course_name")
+  @@map("book_courses")
+}
+
+model Journal {
+  id           Int              @id @default(autoincrement()) @map("journal_id")
+  title        String           @db.VarChar(255)
+  publisher    String           @db.VarChar(100)
+  subject      String           @db.VarChar(50)
+  impactFactor Decimal?         @map("impact_factor") @db.Decimal(4, 2)
+  accessUrl    String?          @map("access_url") @db.VarChar(500)
+  journalType  JournalEntryType @map("journal_type")
+  createdAt    DateTime         @default(now()) @map("created_at")
+
+  @@index([subject], map: "idx_journals_subject")
+  @@index([journalType], map: "idx_journals_type")
+  @@map("journals")
+}
+
+model ReadingList {
+  id           Int               @id @default(autoincrement()) @map("reading_list_id")
+  title        String            @db.VarChar(255)
+  facultyId    String?           @map("faculty_id") @db.Uuid
+  description  String?
+  studentCount Int               @default(0) @map("student_count")
+  isActive     Boolean           @default(true) @map("is_active")
+  createdAt    DateTime          @default(now()) @map("created_at")
+  updatedAt    DateTime          @updatedAt @map("updated_at")
+  faculty      User?             @relation(fields: [facultyId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  books        ReadingListBook[]
+
+  @@index([facultyId], map: "idx_reading_lists_faculty_id")
+  @@index([isActive], map: "idx_reading_lists_is_active")
+  @@map("reading_lists")
+}
+
+model ReadingListBook {
+  readingListId Int         @map("reading_list_id")
+  bookId        Int         @map("book_id")
+  addedAt       DateTime    @default(now()) @map("added_at")
+  readingList   ReadingList @relation(fields: [readingListId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  book          Book        @relation(fields: [bookId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([readingListId, bookId])
+  @@index([bookId], map: "idx_reading_list_books_book_id")
+  @@map("reading_list_books")
+}
+
+model BorrowRecord {
+  id           Int       @id @default(autoincrement()) @map("borrow_id")
+  userId       String    @map("user_id") @db.Uuid
+  bookId       Int       @map("book_id")
+  borrowedDate DateTime  @default(now()) @map("borrowed_date")
+  dueDate      DateTime  @map("due_date")
+  returnedDate DateTime? @map("returned_date")
+  status       String    @default("active") @db.VarChar(20)
+  createdAt    DateTime  @default(now()) @map("created_at")
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  book         Book      @relation(fields: [bookId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([userId], map: "idx_borrow_records_user_id")
+  @@index([bookId], map: "idx_borrow_records_book_id")
+  @@index([status], map: "idx_borrow_records_status")
+  @@index([dueDate], map: "idx_borrow_records_due_date")
+  @@index([borrowedDate], map: "idx_borrow_records_borrowed_date")
+  @@map("borrow_records")
+}
+
+model Notification {
+  id               Int              @id @default(autoincrement()) @map("notification_id")
+  userId           String           @map("user_id") @db.Uuid
+  title            String           @db.VarChar(150)
+  message          String
+  notificationType NotificationType @map("notification_type")
+  bookId           Int?             @map("book_id")
+  isRead           Boolean          @default(false) @map("is_read")
+  createdAt        DateTime         @default(now()) @map("created_at")
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  book             Book?            @relation(fields: [bookId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  @@index([userId], map: "idx_notifications_user_id")
+  @@index([isRead], map: "idx_notifications_is_read")
+  @@index([notificationType], map: "idx_notifications_type")
+  @@map("notifications")
+}
+
+model Review {
+  id         Int       @id @default(autoincrement()) @map("review_id")
+  bookId     Int       @map("book_id")
+  userId     String?   @map("user_id") @db.Uuid
+  userName   String    @map("user_name") @db.VarChar(100)
+  rating     Decimal   @db.Decimal(3, 2)
+  comment    String?
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+  book       Book      @relation(fields: [bookId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user       User?     @relation(fields: [userId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  @@unique([bookId, userId], map: "idx_unique_user_book_review")
+  @@index([bookId], map: "idx_reviews_book_id")
+  @@index([userId], map: "idx_reviews_user_id")
+  @@index([rating], map: "idx_reviews_rating")
+  @@map("reviews")
+}
+
+model WishlistItem {
+  id        Int      @id @default(autoincrement()) @map("wishlist_id")
+  userId    String   @map("user_id") @db.Uuid
+  bookId    Int      @map("book_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  book      Book     @relation(fields: [bookId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([userId, bookId], map: "wishlist_items_user_id_book_id_key")
+  @@index([userId], map: "idx_wishlist_items_user_id")
+  @@index([bookId], map: "idx_wishlist_items_book_id")
+  @@map("wishlist_items")
+}

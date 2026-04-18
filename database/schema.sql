@@ -2,6 +2,9 @@
 -- USANT Library Book Recommendation System (LBRS)
 -- PostgreSQL Database Schema
 -- ============================================================
+-- LEGACY SNAPSHOT: Prisma schema and Prisma migrations are now the
+-- authoritative source for application setup. Use prisma/schema.prisma
+-- and prisma/migrations for current changes.
 -- Backup Reminder: Always backup before making schema changes
 -- pg_dump -U postgres lbrs_db > backup_YYYY-MM-DD.sql
 -- ============================================================

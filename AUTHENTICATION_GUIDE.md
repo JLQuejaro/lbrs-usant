@@ -69,7 +69,7 @@ src/app/
 │   └── AuthContext.tsx       # User authentication state management
 ├── lib/
 │   ├── auth.ts               # Password hashing & JWT utilities
-│   ├── db.ts                 # Database connection
+│   ├── prisma.ts             # Prisma client bootstrap
 │   └── db-repository.ts      # Database CRUD operations
 ├── api/
 │   ├── auth/
@@ -268,7 +268,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 ### 1. Register a New User
 
-1. Go to http://localhost:3000
+1. Go to the active application URL for your environment
 2. Click "Register"
 3. Fill in the form:
    - Full Name: Test User

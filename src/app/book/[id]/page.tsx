@@ -6,8 +6,13 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useState, useEffect, use } from 'react';
 import BorrowModal from '@/app/components/BorrowModal';
-import { getLocalWishlist, toggleLocalWishlist } from '@/app/lib/localWishlist';
 import { useAuth } from '@/app/contexts/AuthContext';
+import {
+  addWishlistBook,
+  fetchWishlist,
+  removeWishlistBook,
+  syncLegacyWishlist,
+} from '@/app/lib/wishlist-client';
 
 interface Book {
   id: number;
@@ -45,11 +50,8 @@ export default function BookDetailsPage({ params }: { params: Promise<{ id: stri
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    setIsInWishlist(getLocalWishlist().includes(bookId));
-  }, [bookId]);
-
-  useEffect(() => {
     if (!token) {
+      setIsInWishlist(false);
       setIsLoading(false);
       return;
     }
@@ -58,6 +60,15 @@ export default function BookDetailsPage({ params }: { params: Promise<{ id: stri
 
     const loadBook = async () => {
       try {
+        await syncLegacyWishlist(token).catch((error) => {
+          console.error('Failed to migrate legacy wishlist:', error);
+        });
+
+        const wishlistPromise = fetchWishlist(token).catch((error) => {
+          console.error('Failed to load wishlist:', error);
+          return null;
+        });
+
         const bookRes = await fetch(`/api/books?id=${bookId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -85,6 +96,11 @@ export default function BookDetailsPage({ params }: { params: Promise<{ id: stri
           if (isMounted) setReviews(data.reviews || []);
         }
 
+        const wishlistData = await wishlistPromise;
+        if (wishlistData && isMounted) {
+          setIsInWishlist(wishlistData.bookIds.includes(bookId));
+        }
+
         if (borrowsRes.ok) {
           const data = await borrowsRes.json();
           const borrowed = (data.borrows || []).some((b: any) => b.bookId === bookId && b.status === 'active');
@@ -109,9 +125,17 @@ export default function BookDetailsPage({ params }: { params: Promise<{ id: stri
     };
   }, [bookId, token]);
 
-  const handleToggleWishlist = () => {
-    const newWishlist = toggleLocalWishlist(bookId);
-    setIsInWishlist(newWishlist.includes(bookId));
+  const handleToggleWishlist = async () => {
+    if (!token) return;
+
+    try {
+      const newWishlist = isInWishlist
+        ? await removeWishlistBook(token, bookId)
+        : await addWishlistBook(token, bookId);
+      setIsInWishlist(newWishlist.includes(bookId));
+    } catch (error) {
+      console.error('Failed to update wishlist:', error);
+    }
   };
 
   const handleModalClose = () => {

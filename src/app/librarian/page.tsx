@@ -2,9 +2,9 @@
 "use client";
 
 import Navbar from '@/app/components/Navbar';
-import AddBookModal from '@/app/components/AddBookModal';
+import AddBookModal, { type CreateBookFormInput } from '@/app/components/AddBookModal';
 import { 
-  Book as BookIcon, Users, Layers, Plus, Search, Edit, Trash2, CheckCircle, XCircle, 
+  Book as BookIcon, Layers, Plus, Search, Edit, Trash2, CheckCircle,
   TrendingUp, FileText, ShoppingBag, Star, AlertCircle, BarChart3, Clock, ArrowRight 
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
@@ -38,12 +38,15 @@ interface User {
   role: string;
 }
 
+const librarianTabs = ['Inventory', 'Borrowing', 'Reports', 'Users', 'Acquisition'] as const;
+
 export default function LibrarianDashboard() {
   const [activeTab, setActiveTab] = useState<'Inventory' | 'Borrowing' | 'Reports' | 'Users' | 'Acquisition'>('Inventory');
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [books, setBooks] = useState<Book[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [inventoryError, setInventoryError] = useState<string | null>(null);
   const { token } = useAuth();
 
   useEffect(() => {
@@ -77,12 +80,72 @@ export default function LibrarianDashboard() {
     };
   }, [token]);
 
-  const handleAddBook = (newBook: any) => {
-    setBooks([newBook, ...books]);
+  const handleAddBook = async (newBook: CreateBookFormInput) => {
+    if (!token) {
+      throw new Error('You must be signed in to add books.');
+    }
+
+    setInventoryError(null);
+
+    const response = await fetch('/api/books', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        ...newBook,
+        publicationYear: newBook.year,
+        stockQuantity: 1,
+        availableCopies: newBook.stock ? 1 : 0,
+        status: newBook.stock ? 'Available' : 'Borrowed',
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      const message = typeof data?.message === 'string' ? data.message : 'Failed to create book';
+      setInventoryError(message);
+      throw new Error(message);
+    }
+
+    setBooks((currentBooks) => [data.book, ...currentBooks]);
   };
 
-  const toggleFeatured = (id: number) => {
-    setBooks(prev => prev.map(b => b.id === id ? { ...b, featured: !b.featured } : b));
+  const toggleFeatured = async (id: number, featured: boolean) => {
+    if (!token) {
+      return;
+    }
+
+    setInventoryError(null);
+
+    try {
+      const response = await fetch(`/api/books?id=${id}`, {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ featured }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          typeof data?.message === 'string' ? data.message : 'Failed to update featured status'
+        );
+      }
+
+      setBooks((currentBooks) =>
+        currentBooks.map((book) => (book.id === id ? data.book : book))
+      );
+    } catch (error) {
+      setInventoryError(
+        error instanceof Error ? error.message : 'Failed to update featured status'
+      );
+    }
   };
 
   const filteredBooks = books.filter(book => 
@@ -91,8 +154,6 @@ export default function LibrarianDashboard() {
   );
 
   const popularBooks = [...books].sort((a, b) => b.borrowCount - a.borrowCount).slice(0, 5);
-  const trendingBooks = [...books].sort((a, b) => b.views - a.views).slice(0, 5);
-  
   // Suggestions: Books with high views but low borrow count or missing genres
   const suggestions = books
     .filter(b => b.views > 500 && b.borrowCount < 50)
@@ -119,10 +180,10 @@ export default function LibrarianDashboard() {
           </div>
           
           <div className="flex bg-white p-1 rounded-xl shadow-sm border border-gray-200 overflow-x-auto no-scrollbar">
-            {['Inventory', 'Borrowing', 'Reports', 'Users', 'Acquisition'].map((tab) => (
+            {librarianTabs.map((tab) => (
               <button
                 key={tab}
-                onClick={() => setActiveTab(tab as any)}
+                onClick={() => setActiveTab(tab)}
                 className={`px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${
                   activeTab === tab 
                   ? 'bg-gradient-to-r from-usant-red to-usant-orange text-white shadow-md' 
@@ -166,6 +227,12 @@ export default function LibrarianDashboard() {
                 </button>
             </div>
 
+            {inventoryError && (
+              <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {inventoryError}
+              </div>
+            )}
+
             {/* Table */}
             <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
               <table className="w-full text-left">
@@ -204,7 +271,7 @@ export default function LibrarianDashboard() {
                       </td>
                       <td className="px-6 py-4">
                         <button 
-                          onClick={() => toggleFeatured(book.id)}
+                          onClick={() => void toggleFeatured(book.id, !book.featured)}
                           className={`p-2 rounded-lg transition-all ${
                             book.featured 
                             ? 'text-yellow-500 bg-yellow-50 hover:bg-yellow-100' 
@@ -541,7 +608,19 @@ function TrendBar({ day, height }: { day: string, height: string }) {
   );
 }
 
-function ReportCard({ title, count, subtitle, status, icon }: any) {
+function ReportCard({
+  title,
+  count,
+  subtitle,
+  status,
+  icon,
+}: {
+  title: string;
+  count: string;
+  subtitle: string;
+  status: 'urgent' | 'good' | 'info';
+  icon: React.ReactNode;
+}) {
   const statusColors = {
     urgent: 'text-red-600 bg-red-50 border-red-100',
     good: 'text-green-600 bg-green-50 border-green-100',

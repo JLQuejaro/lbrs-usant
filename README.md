@@ -1,36 +1,56 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# USANT LBRS
 
-## Getting Started
+USANT LBRS is a Next.js 16 application backed by Prisma ORM and PostgreSQL.
 
-First, run the development server:
+## Database stack
+
+- Prisma schema: `prisma/schema.prisma`
+- Prisma migrations: `prisma/migrations`
+- Prisma Studio: `npm run db:studio`
+- Repository layer: `src/app/lib/db-repository.ts`
+
+## Getting started
+
+1. Copy `.env.example` to `.env.local`.
+2. Set `DATABASE_URL`, `DIRECT_URL`, `JWT_SECRET`, and `NEXT_PUBLIC_APP_URL`.
+3. Install dependencies and initialize Prisma:
+
+```bash
+npm install
+npm run db:generate
+npm run db:validate
+npm run db:migrate
+npm run db:seed
+```
+
+4. Start the application:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+5. Open the URL printed by Next.js in your terminal.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Prisma Studio
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Inter](https://fonts.google.com/specimen/Inter), a professional font family from Google Fonts.
+Use Prisma Studio as the primary database management interface:
 
-## Learn More
+```bash
+npm run db:studio -- --port 5555
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Validation
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+npm run db:test
+npm run lint
+npm run build
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Documentation
 
-## Deploy on Vercel
+- [Prisma Migration Guide](./PRISMA_MIGRATION_GUIDE.md)
+- [Quickstart](./QUICKSTART.md)
+- [Authentication Guide](./AUTHENTICATION_GUIDE.md)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Legacy SQL setup files remain in `database/` for archival reference only and are no longer the recommended setup path.

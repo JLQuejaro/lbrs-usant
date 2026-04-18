@@ -7,11 +7,19 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "db:test": "tsx scripts/test-db.ts",
-    "db:seed": "psql -U postgres lbrs_db < database/seed.sql",
-    "db:cleanup": "psql -U postgres lbrs_db < database/cleanup_mock_data.sql"
+    "db:generate": "prisma generate",
+    "db:validate": "prisma validate",
+    "db:migrate:dev": "prisma migrate dev",
+    "db:migrate": "prisma migrate deploy",
+    "db:status": "prisma migrate status",
+    "db:push": "prisma db push",
+    "db:seed": "prisma db seed",
+    "db:studio": "prisma studio",
+    "db:test": "node scripts/test-db.js"
   },
   "dependencies": {
+    "@prisma/adapter-pg": "^7.7.0",
+    "@prisma/client": "^7.7.0",
     "bcryptjs": "^3.0.3",
     "dotenv": "^17.3.1",
     "jsonwebtoken": "^9.0.3",
@@ -19,6 +27,7 @@
     "lucide-react": "^0.563.0",
     "next": "16.1.6",
     "pg": "^8.18.0",
+    "prisma": "^7.7.0",
     "react": "19.2.3",
     "react-dom": "19.2.3"
   },

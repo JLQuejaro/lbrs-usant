@@ -4,46 +4,79 @@
 import { X, BookOpen, Check } from 'lucide-react';
 import { useState } from 'react';
 
+export interface CreateBookFormInput {
+  title: string;
+  author: string;
+  genre: string;
+  year: number | null;
+  stock: boolean;
+  courses: string[];
+}
+
 interface AddBookModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (book: any) => void;
+  onSave: (book: CreateBookFormInput) => Promise<void> | void;
 }
 
 const AVAILABLE_COURSES = ['Computer Science', 'Information Tech', 'Engineering', 'Education', 'General'];
 
-export default function AddBookModal({ isOpen, onClose, onSave }: AddBookModalProps) {
-  const [formData, setFormData] = useState({
+function createDefaultFormData() {
+  return {
     title: '',
     author: '',
     genre: 'Computer Science',
     year: new Date().getFullYear().toString(),
     stock: true,
-    courses: [] as string[]
-  });
+    courses: [] as string[],
+  };
+}
+
+export default function AddBookModal({ isOpen, onClose, onSave }: AddBookModalProps) {
+  const [formData, setFormData] = useState(createDefaultFormData);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSave({ 
-      ...formData, 
-      id: Date.now(), 
-      featured: false,
-      borrowCount: 0,
-      views: 0,
-      dateAdded: new Date().toISOString().split('T')[0]
-    }); // Create a temp ID
+  const resetForm = () => {
+    setFormData(createDefaultFormData());
+    setErrorMessage(null);
+  };
+
+  const handleClose = () => {
+    if (isSaving) {
+      return;
+    }
+
+    resetForm();
     onClose();
-    // Reset form
-    setFormData({ 
-      title: '', 
-      author: '', 
-      genre: 'Computer Science', 
-      year: new Date().getFullYear().toString(),
-      stock: true,
-      courses: [] 
-    });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage(null);
+    setIsSaving(true);
+
+    try {
+      const parsedYear = Number(formData.year);
+
+      await onSave({
+        title: formData.title.trim(),
+        author: formData.author.trim(),
+        genre: formData.genre,
+        year: Number.isInteger(parsedYear) ? parsedYear : null,
+        stock: formData.stock,
+        courses: formData.courses,
+      });
+
+      resetForm();
+      onClose();
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to save book');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const toggleCourse = (course: string) => {
@@ -69,7 +102,7 @@ export default function AddBookModal({ isOpen, onClose, onSave }: AddBookModalPr
             </div>
             <h2 className="text-xl font-bold">Add New Book</h2>
           </div>
-          <button onClick={onClose} className="text-white/80 hover:text-white transition p-1 hover:bg-white/10 rounded-full">
+          <button onClick={handleClose} className="text-white/80 hover:text-white transition p-1 hover:bg-white/10 rounded-full">
             <X size={24} />
           </button>
         </div>
@@ -85,6 +118,7 @@ export default function AddBookModal({ isOpen, onClose, onSave }: AddBookModalPr
               type="text" 
               placeholder="e.g. Clean Architecture"
               value={formData.title}
+              disabled={isSaving}
               onChange={(e) => setFormData({...formData, title: e.target.value})}
               className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-usant-red focus:border-usant-red focus:outline-none transition-all"
             />
@@ -98,6 +132,7 @@ export default function AddBookModal({ isOpen, onClose, onSave }: AddBookModalPr
               type="text" 
               placeholder="e.g. Robert C. Martin"
               value={formData.author}
+              disabled={isSaving}
               onChange={(e) => setFormData({...formData, author: e.target.value})}
               className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-usant-red focus:border-usant-red focus:outline-none transition-all"
             />
@@ -109,6 +144,7 @@ export default function AddBookModal({ isOpen, onClose, onSave }: AddBookModalPr
               <label className="block text-sm font-semibold text-gray-700 mb-1">Genre</label>
               <select 
                 value={formData.genre}
+                disabled={isSaving}
                 onChange={(e) => setFormData({...formData, genre: e.target.value})}
                 className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-usant-red focus:outline-none bg-white"
               >
@@ -127,6 +163,7 @@ export default function AddBookModal({ isOpen, onClose, onSave }: AddBookModalPr
                 type="number" 
                 placeholder="2024"
                 value={formData.year}
+                disabled={isSaving}
                 onChange={(e) => setFormData({...formData, year: e.target.value})}
                 className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-usant-red focus:outline-none transition-all"
               />
@@ -142,6 +179,7 @@ export default function AddBookModal({ isOpen, onClose, onSave }: AddBookModalPr
                   <input 
                     type="checkbox" 
                     checked={formData.courses.includes(course)}
+                    disabled={isSaving}
                     onChange={() => toggleCourse(course)}
                     className="w-4 h-4 rounded text-usant-red focus:ring-usant-red border-gray-300"
                   />
@@ -157,6 +195,7 @@ export default function AddBookModal({ isOpen, onClose, onSave }: AddBookModalPr
                 type="checkbox" 
                 id="stock"
                 checked={formData.stock}
+                disabled={isSaving}
                 onChange={(e) => setFormData({...formData, stock: e.target.checked})}
                 className="w-5 h-5 rounded text-usant-red focus:ring-usant-red border-gray-300 cursor-pointer"
              />
@@ -165,20 +204,28 @@ export default function AddBookModal({ isOpen, onClose, onSave }: AddBookModalPr
              </label>
           </div>
 
+          {errorMessage && (
+            <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {errorMessage}
+            </div>
+          )}
+
           {/* Footer Actions */}
           <div className="pt-4 flex gap-3">
             <button 
               type="button" 
-              onClick={onClose}
+              onClick={handleClose}
+              disabled={isSaving}
               className="flex-1 px-4 py-3 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition"
             >
               Cancel
             </button>
             <button 
               type="submit" 
+              disabled={isSaving}
               className="flex-1 px-4 py-3 rounded-lg bg-usant-red text-white font-bold hover:bg-red-800 transition shadow-lg shadow-red-100 flex items-center justify-center gap-2"
             >
-              <Check size={20} /> Save Book
+              <Check size={20} /> {isSaving ? 'Saving...' : 'Save Book'}
             </button>
           </div>
 

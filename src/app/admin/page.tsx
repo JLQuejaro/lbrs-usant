@@ -3,8 +3,8 @@
 
 import Navbar from '@/app/components/Navbar';
 import {
-  Users, Database, Activity, Shield, Search, Plus, Trash2, Edit, AlertTriangle,
-  Clock, TrendingUp, BarChart3, FileText, Settings, Server, Lock, CheckCircle,
+  Users, Database, Activity, Shield, Search, Plus, Trash2, Edit,
+  Clock, TrendingUp, BarChart3, FileText, Server, Lock, CheckCircle,
   XCircle, FileCheck, UserCheck, Hourglass, Eye, Download
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -41,14 +41,17 @@ interface Stats {
   pendingRequests: number;
 }
 
+const adminTabs = ['Users', 'Account Requests', 'Analytics', 'Audit Logs', 'System'] as const;
+
 export default function AdminPanel() {
   const { token } = useAuth();
   const [activeTab, setActiveTab] = useState<'Users' | 'Account Requests' | 'Audit Logs' | 'System' | 'Analytics'>('Users');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRequest, setSelectedRequest] = useState<UiAccountRequest | null>(null);
   const [showReviewModal, setShowReviewModal] = useState(false);
-  const [reviewAction, setReviewAction] = useState<'approve' | 'reject' | null>(null);
   const [reviewNotes, setReviewNotes] = useState('');
+  const [reviewError, setReviewError] = useState<string | null>(null);
+  const [isReviewSubmitting, setIsReviewSubmitting] = useState(false);
   const [requestFilter, setRequestFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('pending');
   const [users, setUsers] = useState<UiUser[]>([]);
   const [accountRequests, setAccountRequests] = useState<UiAccountRequest[]>([]);
@@ -91,6 +94,61 @@ export default function AdminPanel() {
     };
   }, [token]);
 
+  const closeReviewModal = () => {
+    setShowReviewModal(false);
+    setSelectedRequest(null);
+    setReviewNotes('');
+    setReviewError(null);
+    setIsReviewSubmitting(false);
+  };
+
+  const submitReview = async (status: 'approved' | 'rejected') => {
+    if (!selectedRequest || !token) {
+      return;
+    }
+
+    setReviewError(null);
+    setIsReviewSubmitting(true);
+
+    try {
+      const response = await fetch(`/api/account-requests?id=${selectedRequest.id}`, {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          status,
+          reviewNotes,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          typeof data?.message === 'string'
+            ? data.message
+            : `Failed to ${status === 'approved' ? 'approve' : 'reject'} account request`
+        );
+      }
+
+      const updatedRequest = data.request as UiAccountRequest;
+      setAccountRequests((currentRequests) =>
+        currentRequests.map((request) =>
+          request.id === updatedRequest.id ? updatedRequest : request
+        )
+      );
+      closeReviewModal();
+    } catch (error) {
+      setReviewError(
+        error instanceof Error ? error.message : 'Failed to review account request'
+      );
+    } finally {
+      setIsReviewSubmitting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
@@ -104,12 +162,12 @@ export default function AdminPanel() {
             <p className="text-gray-500">Root level management and performance monitoring.</p>
           </div>
           <div className="flex bg-white p-1 rounded-xl shadow-sm border border-gray-200 overflow-x-auto no-scrollbar">
-             {['Users', 'Account Requests', 'Analytics', 'Audit Logs', 'System'].map((tab) => {
+             {adminTabs.map((tab) => {
                const pendingCount = tab === 'Account Requests' ? accountRequests.filter(r => r.status === 'pending').length : 0;
                return (
                  <button
                    key={tab}
-                   onClick={() => setActiveTab(tab as any)}
+                   onClick={() => setActiveTab(tab)}
                    className={`px-6 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap flex items-center gap-2 ${
                      activeTab === tab
                      ? 'bg-gradient-to-r from-usant-red to-usant-orange text-white shadow-md'
@@ -335,7 +393,7 @@ export default function AdminPanel() {
                       <td className="px-6 py-4 text-right">
                         <div className="flex justify-end gap-2">
                           <button 
-                            onClick={() => { setSelectedRequest(request); setShowReviewModal(true); }}
+                            onClick={() => { setSelectedRequest(request); setReviewError(null); setShowReviewModal(true); }}
                             className="text-gray-400 hover:text-blue-600 p-1 transition"
                             title="View Details"
                           >
@@ -344,14 +402,14 @@ export default function AdminPanel() {
                           {request.status === 'pending' && (
                             <>
                               <button 
-                                onClick={() => { setSelectedRequest(request); setReviewAction('approve'); setShowReviewModal(true); }}
+                                onClick={() => { setSelectedRequest(request); setReviewError(null); setShowReviewModal(true); }}
                                 className="text-gray-400 hover:text-green-600 p-1 transition"
                                 title="Approve"
                               >
                                 <CheckCircle size={16}/>
                               </button>
                               <button 
-                                onClick={() => { setSelectedRequest(request); setReviewAction('reject'); setShowReviewModal(true); }}
+                                onClick={() => { setSelectedRequest(request); setReviewError(null); setShowReviewModal(true); }}
                                 className="text-gray-400 hover:text-red-600 p-1 transition"
                                 title="Reject"
                               >
@@ -387,7 +445,7 @@ export default function AdminPanel() {
                   </div>
                 </div>
                 <button 
-                  onClick={() => { setShowReviewModal(false); setSelectedRequest(null); setReviewAction(null); setReviewNotes(''); }}
+                  onClick={closeReviewModal}
                   className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-100 rounded-lg transition"
                 >
                   <XCircle size={20} />
@@ -489,33 +547,29 @@ export default function AdminPanel() {
                     <textarea
                       value={reviewNotes}
                       onChange={(e) => setReviewNotes(e.target.value)}
+                      disabled={isReviewSubmitting}
                       placeholder="Add any notes about this approval/rejection..."
                       className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-usant-red/20 resize-none h-24"
                     />
+                    {reviewError && (
+                      <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                        {reviewError}
+                      </div>
+                    )}
                     <div className="flex gap-3 mt-4">
                       <button
-                        onClick={() => {
-                          // Handle approve logic here
-                          alert(`Approved: ${selectedRequest.name}`);
-                          setShowReviewModal(false);
-                          setSelectedRequest(null);
-                          setReviewNotes('');
-                        }}
+                        onClick={() => void submitReview('approved')}
+                        disabled={isReviewSubmitting}
                         className="flex-1 py-3 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition flex items-center justify-center gap-2"
                       >
-                        <CheckCircle size={18} /> Approve Account
+                        <CheckCircle size={18} /> {isReviewSubmitting ? 'Saving...' : 'Approve Account'}
                       </button>
                       <button
-                        onClick={() => {
-                          // Handle reject logic here
-                          alert(`Rejected: ${selectedRequest.name}`);
-                          setShowReviewModal(false);
-                          setSelectedRequest(null);
-                          setReviewNotes('');
-                        }}
+                        onClick={() => void submitReview('rejected')}
+                        disabled={isReviewSubmitting}
                         className="flex-1 py-3 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 transition flex items-center justify-center gap-2"
                       >
-                        <XCircle size={18} /> Reject Account
+                        <XCircle size={18} /> {isReviewSubmitting ? 'Saving...' : 'Reject Account'}
                       </button>
                     </div>
                   </div>
@@ -719,7 +773,17 @@ function StatCard({ icon, label, value, color }: { icon: React.ReactNode, label:
   );
 }
 
-function HealthBar({ label, status, value, color }: any) {
+function HealthBar({
+  label,
+  status,
+  value,
+  color,
+}: {
+  label: string;
+  status: string;
+  value: number;
+  color: string;
+}) {
     return (
         <div>
             <div className="flex justify-between items-center mb-2">

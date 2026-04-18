@@ -1,4 +1,15 @@
-import pool from './db';
+import {
+  AdminUserType,
+  ApprovalStatus as PrismaApprovalStatus,
+  FacultyUserType,
+  JournalEntryType,
+  NotificationType as PrismaNotificationType,
+  Prisma,
+  StaffUserType,
+  StudentUserType,
+  UserRole,
+} from '@prisma/client';
+import { prisma } from './prisma';
 
 // ============================================================
 // TYPES
@@ -8,6 +19,7 @@ export interface User {
   user_id: string;
   username: string;
   email: string;
+  password_hash: string;
   role: 'student' | 'faculty' | 'staff' | 'admin';
   user_type_student?: string;
   user_type_faculty?: string;
@@ -19,6 +31,11 @@ export interface User {
   approval_status: 'pending' | 'approved' | 'rejected';
   is_active: boolean;
   created_at: Date;
+  updated_at: Date;
+  last_login_at?: Date | null;
+  reviewed_by?: string | null;
+  reviewed_at?: Date | null;
+  review_notes?: string | null;
 }
 
 export interface Book {
@@ -26,14 +43,14 @@ export interface Book {
   title: string;
   author: string;
   genre: string;
-  description?: string;
-  pages?: number;
-  publication_year?: number;
+  description?: string | null;
+  pages?: number | null;
+  publication_year?: number | null;
   stock_quantity: number;
   available_copies: number;
   status: string;
-  location?: string;
-  color_theme?: string;
+  location?: string | null;
+  color_theme?: string | null;
   borrow_count: number;
   views: number;
   featured: boolean;
@@ -43,17 +60,33 @@ export interface Book {
   total_reviews?: number | null;
 }
 
+export interface CreateBookInput {
+  title: string;
+  author: string;
+  genre: string;
+  description?: string | null;
+  pages?: number | null;
+  publication_year?: number | null;
+  stock_quantity?: number;
+  available_copies?: number;
+  status?: string;
+  location?: string | null;
+  color_theme?: string | null;
+  featured?: boolean;
+  courses?: string[];
+}
+
 export interface BorrowRecord {
   borrow_id: number;
   user_id: string;
   book_id: number;
   borrowed_date: Date;
   due_date: Date;
-  returned_date?: Date;
+  returned_date?: Date | null;
   status: string;
   title?: string;
   author?: string;
-  color_theme?: string;
+  color_theme?: string | null;
   username?: string;
   email?: string;
 }
@@ -64,14 +97,15 @@ export interface AccountRequest {
   email: string;
   requested_role: string;
   user_type: string;
-  course?: string;
-  department?: string;
+  course?: string | null;
+  department?: string | null;
+  year_level?: string | null;
   status: 'pending' | 'approved' | 'rejected';
   requested_at: Date;
-  id_document_path?: string;
-  reviewed_by?: string;
-  reviewed_at?: Date;
-  review_notes?: string;
+  id_document_path?: string | null;
+  reviewed_by?: string | null;
+  reviewed_at?: Date | null;
+  review_notes?: string | null;
 }
 
 export interface Journal {
@@ -88,8 +122,8 @@ export interface Journal {
 export interface ReadingList {
   reading_list_id: number;
   title: string;
-  faculty_id: string;
-  description?: string;
+  faculty_id: string | null;
+  description?: string | null;
   student_count: number;
   is_active: boolean;
   created_at: Date;
@@ -119,58 +153,360 @@ export interface Review {
   updated_at: Date;
 }
 
+export interface WishlistItem {
+  wishlist_id: number;
+  user_id: string;
+  book_id: number;
+  created_at: Date;
+}
+
+const studentTypeLabels: Record<StudentUserType, string> = {
+  UNDERGRADUATE_STUDENT: 'Undergraduate Student',
+  GRADUATE_STUDENT_MASTERS: "Graduate Student (Master's)",
+  GRADUATE_STUDENT_PHD: 'Graduate Student (PhD)',
+  DISTANCE_ONLINE_LEARNER: 'Distance/Online Learner',
+};
+
+const facultyTypeLabels: Record<FacultyUserType, string> = {
+  PROFESSOR: 'Professor',
+  LECTURER: 'Lecturer',
+  RESEARCHER: 'Researcher',
+};
+
+const staffTypeLabels: Record<StaffUserType, string> = {
+  ADMINISTRATIVE_STAFF: 'Administrative Staff',
+  TECHNICAL_SUPPORT_STAFF: 'Technical/Support Staff',
+  LIBRARIAN: 'Librarian',
+};
+
+const adminTypeLabels: Record<AdminUserType, string> = {
+  SYSTEM_ADMINISTRATOR: 'System Administrator',
+};
+
+const studentTypeValues = Object.fromEntries(
+  Object.entries(studentTypeLabels).map(([key, value]) => [value, key])
+) as Record<string, StudentUserType>;
+
+const facultyTypeValues = Object.fromEntries(
+  Object.entries(facultyTypeLabels).map(([key, value]) => [value, key])
+) as Record<string, FacultyUserType>;
+
+const staffTypeValues = Object.fromEntries(
+  Object.entries(staffTypeLabels).map(([key, value]) => [value, key])
+) as Record<string, StaffUserType>;
+
+const adminTypeValues = Object.fromEntries(
+  Object.entries(adminTypeLabels).map(([key, value]) => [value, key])
+) as Record<string, AdminUserType>;
+
+const journalTypeLabels: Record<JournalEntryType, 'Journal' | 'Reference'> = {
+  JOURNAL: 'Journal',
+  REFERENCE: 'Reference',
+};
+
+const bookInclude = {
+  courses: {
+    select: {
+      courseName: true,
+    },
+  },
+} as const;
+
+const borrowInclude = {
+  book: {
+    select: {
+      title: true,
+      author: true,
+      colorTheme: true,
+    },
+  },
+  user: {
+    select: {
+      username: true,
+      email: true,
+    },
+  },
+} as const;
+
+type BookRecord = Prisma.BookGetPayload<{ include: typeof bookInclude }>;
+type BorrowRecordWithRelations = Prisma.BorrowRecordGetPayload<{ include: typeof borrowInclude }>;
+
+function normalizeCourses(courses?: string[]) {
+  return Array.from(
+    new Set(
+      (courses ?? [])
+        .map((course) => course.trim())
+        .filter(Boolean)
+    )
+  );
+}
+
+function normalizeNonNegativeInteger(value: number | undefined, fallback: number) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return fallback;
+  }
+
+  return Math.max(0, Math.trunc(value));
+}
+
+function toUserRole(role: string): UserRole {
+  if (role === 'student' || role === 'faculty' || role === 'staff' || role === 'admin') {
+    return role;
+  }
+  throw new Error(`Unsupported role: ${role}`);
+}
+
+function toApprovalStatus(status: string): PrismaApprovalStatus {
+  if (status === 'pending' || status === 'approved' || status === 'rejected') {
+    return status;
+  }
+  throw new Error(`Unsupported approval status: ${status}`);
+}
+
+function mapUserRecord(user: {
+  id: string;
+  username: string;
+  email: string;
+  passwordHash: string;
+  role: UserRole;
+  studentType: StudentUserType | null;
+  facultyType: FacultyUserType | null;
+  staffType: StaffUserType | null;
+  adminType: AdminUserType | null;
+  course: string | null;
+  department: string | null;
+  yearLevel: string | null;
+  approvalStatus: PrismaApprovalStatus;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  lastLoginAt: Date | null;
+  reviewedById: string | null;
+  reviewedAt: Date | null;
+  reviewNotes: string | null;
+}): User {
+  return {
+    user_id: user.id,
+    username: user.username,
+    email: user.email,
+    password_hash: user.passwordHash,
+    role: user.role,
+    user_type_student: user.studentType ? studentTypeLabels[user.studentType] : undefined,
+    user_type_faculty: user.facultyType ? facultyTypeLabels[user.facultyType] : undefined,
+    user_type_staff: user.staffType ? staffTypeLabels[user.staffType] : undefined,
+    user_type_admin: user.adminType ? adminTypeLabels[user.adminType] : undefined,
+    course: user.course ?? undefined,
+    department: user.department ?? undefined,
+    year_level: user.yearLevel ?? undefined,
+    approval_status: user.approvalStatus,
+    is_active: user.isActive,
+    created_at: user.createdAt,
+    updated_at: user.updatedAt,
+    last_login_at: user.lastLoginAt,
+    reviewed_by: user.reviewedById,
+    reviewed_at: user.reviewedAt,
+    review_notes: user.reviewNotes,
+  };
+}
+
+async function getReviewStatsForBooks(bookIds: number[]) {
+  if (bookIds.length === 0) {
+    return new Map<number, { averageRating: number | null; totalReviews: number }>();
+  }
+
+  const stats = await prisma.review.groupBy({
+    by: ['bookId'],
+    where: {
+      bookId: {
+        in: bookIds,
+      },
+    },
+    _avg: {
+      rating: true,
+    },
+    _count: {
+      _all: true,
+    },
+  });
+
+  return new Map(
+    stats.map((stat) => [
+      stat.bookId,
+      {
+        averageRating: stat._avg.rating ? Number(stat._avg.rating) : null,
+        totalReviews: stat._count._all,
+      },
+    ])
+  );
+}
+
+async function mapBooks(records: BookRecord[]): Promise<Book[]> {
+  const stats = await getReviewStatsForBooks(records.map((record) => record.id));
+
+  return records.map((record) => {
+    const bookStats = stats.get(record.id);
+
+    return {
+      book_id: record.id,
+      title: record.title,
+      author: record.author,
+      genre: record.genre,
+      description: record.description,
+      pages: record.pages,
+      publication_year: record.publicationYear,
+      stock_quantity: record.stockQuantity,
+      available_copies: record.availableCopies,
+      status: record.status,
+      location: record.location,
+      color_theme: record.colorTheme,
+      borrow_count: record.borrowCount,
+      views: record.views,
+      featured: record.featured,
+      date_added: record.dateAdded,
+      courses: record.courses.map((course) => course.courseName),
+      average_rating: bookStats?.averageRating ?? null,
+      total_reviews: bookStats?.totalReviews ?? 0,
+    };
+  });
+}
+
+function mapBorrowRecord(record: BorrowRecordWithRelations): BorrowRecord {
+  return {
+    borrow_id: record.id,
+    user_id: record.userId,
+    book_id: record.bookId,
+    borrowed_date: record.borrowedDate,
+    due_date: record.dueDate,
+    returned_date: record.returnedDate,
+    status: record.status,
+    title: record.book.title,
+    author: record.book.author,
+    color_theme: record.book.colorTheme,
+    username: record.user.username,
+    email: record.user.email,
+  };
+}
+
+function mapAccountRequestRecord(record: {
+  id: string;
+  fullName: string;
+  email: string;
+  requestedRole: UserRole;
+  userType: string;
+  course: string | null;
+  department: string | null;
+  yearLevel: string | null;
+  status: PrismaApprovalStatus;
+  requestedAt: Date;
+  idDocumentPath: string | null;
+  reviewedById: string | null;
+  reviewedAt: Date | null;
+  reviewNotes: string | null;
+}): AccountRequest {
+  return {
+    request_id: record.id,
+    full_name: record.fullName,
+    email: record.email,
+    requested_role: record.requestedRole,
+    user_type: record.userType,
+    course: record.course,
+    department: record.department,
+    year_level: record.yearLevel,
+    status: record.status,
+    requested_at: record.requestedAt,
+    id_document_path: record.idDocumentPath,
+    reviewed_by: record.reviewedById,
+    reviewed_at: record.reviewedAt,
+    review_notes: record.reviewNotes,
+  };
+}
+
+function mapNotificationRecord(record: {
+  id: number;
+  userId: string;
+  title: string;
+  message: string;
+  notificationType: PrismaNotificationType;
+  bookId: number | null;
+  isRead: boolean;
+  createdAt: Date;
+}): Notification {
+  return {
+    notification_id: record.id,
+    user_id: record.userId,
+    title: record.title,
+    message: record.message,
+    notification_type: record.notificationType,
+    book_id: record.bookId,
+    is_read: record.isRead,
+    created_at: record.createdAt,
+  };
+}
+
+function mapReviewRecord(record: {
+  id: number;
+  bookId: number;
+  userId: string | null;
+  userName: string;
+  rating: Prisma.Decimal;
+  comment: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}): Review {
+  return {
+    review_id: record.id,
+    book_id: record.bookId,
+    user_id: record.userId,
+    user_name: record.userName,
+    rating: Number(record.rating),
+    comment: record.comment,
+    created_at: record.createdAt,
+    updated_at: record.updatedAt,
+  };
+}
+
 // ============================================================
 // USER REPOSITORY
 // ============================================================
 
 export async function getUserByEmail(email: string): Promise<User | null> {
-  const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
-  return result.rows[0] || null;
+  const user = await prisma.user.findUnique({
+    where: { email },
+  });
+
+  return user ? mapUserRecord(user) : null;
 }
 
 export async function getUserById(userId: string): Promise<User | null> {
-  const result = await pool.query('SELECT * FROM users WHERE user_id = $1', [userId]);
-  return result.rows[0] || null;
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+  });
+
+  return user ? mapUserRecord(user) : null;
 }
 
-export async function createUser(userData: Partial<User> & { password_hash: string }): Promise<User> {
-  const {
-    username,
-    email,
-    password_hash,
-    role,
-    user_type_student,
-    user_type_faculty,
-    user_type_staff,
-    user_type_admin,
-    course,
-    department,
-    year_level,
-  } = userData;
+export async function createUser(
+  userData: Partial<User> & { password_hash: string }
+): Promise<User> {
+  const user = await prisma.user.create({
+    data: {
+      username: userData.username ?? '',
+      email: userData.email ?? '',
+      passwordHash: userData.password_hash,
+      role: toUserRole(userData.role ?? ''),
+      studentType: userData.user_type_student ? studentTypeValues[userData.user_type_student] : undefined,
+      facultyType: userData.user_type_faculty ? facultyTypeValues[userData.user_type_faculty] : undefined,
+      staffType: userData.user_type_staff ? staffTypeValues[userData.user_type_staff] : undefined,
+      adminType: userData.user_type_admin ? adminTypeValues[userData.user_type_admin] : undefined,
+      course: userData.course ?? null,
+      department: userData.department ?? null,
+      yearLevel: userData.year_level ?? null,
+      approvalStatus: 'approved',
+      isActive: true,
+    },
+  });
 
-  const result = await pool.query(
-    `INSERT INTO users (
-      username, email, password_hash, role, 
-      user_type_student, user_type_faculty, user_type_staff, user_type_admin,
-      course, department, year_level, approval_status, is_active
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'approved', true)
-    RETURNING *`,
-    [
-      username,
-      email,
-      password_hash,
-      role,
-      user_type_student || null,
-      user_type_faculty || null,
-      user_type_staff || null,
-      user_type_admin || null,
-      course || null,
-      department || null,
-      year_level || null,
-    ]
-  );
-
-  return result.rows[0];
+  return mapUserRecord(user);
 }
 
 export async function updateUserApprovalStatus(
@@ -179,19 +515,27 @@ export async function updateUserApprovalStatus(
   reviewedBy: string,
   reviewNotes?: string
 ): Promise<User | null> {
-  const result = await pool.query(
-    `UPDATE users 
-     SET approval_status = $1, reviewed_by = $2, reviewed_at = CURRENT_TIMESTAMP, review_notes = $3
-     WHERE user_id = $4
-     RETURNING *`,
-    [status, reviewedBy, reviewNotes, userId]
-  );
-  return result.rows[0] || null;
+  const user = await prisma.user.update({
+    where: { id: userId },
+    data: {
+      approvalStatus: toApprovalStatus(status),
+      reviewedById: reviewedBy,
+      reviewedAt: new Date(),
+      reviewNotes: reviewNotes ?? null,
+    },
+  });
+
+  return user ? mapUserRecord(user) : null;
 }
 
 export async function getAllUsers(): Promise<User[]> {
-  const result = await pool.query('SELECT * FROM users ORDER BY created_at DESC');
-  return result.rows;
+  const users = await prisma.user.findMany({
+    orderBy: {
+      createdAt: 'desc',
+    },
+  });
+
+  return users.map(mapUserRecord);
 }
 
 // ============================================================
@@ -199,107 +543,198 @@ export async function getAllUsers(): Promise<User[]> {
 // ============================================================
 
 export async function getAllBooks(limit = 100): Promise<Book[]> {
-  const result = await pool.query(
-    `SELECT b.*,
-            MAX(bs.average_rating) AS average_rating,
-            MAX(bs.total_reviews) AS total_reviews,
-            COALESCE(array_agg(bc.course_name) FILTER (WHERE bc.course_name IS NOT NULL), '{}') AS courses
-     FROM books b
-     LEFT JOIN book_statistics_view bs ON bs.book_id = b.book_id
-     LEFT JOIN book_courses bc ON bc.book_id = b.book_id
-     GROUP BY b.book_id
-     ORDER BY b.title
-     LIMIT $1`,
-    [limit]
-  );
-  return result.rows;
+  const books = await prisma.book.findMany({
+    take: limit,
+    orderBy: {
+      title: 'asc',
+    },
+    include: bookInclude,
+  });
+
+  return mapBooks(books);
+}
+
+export async function getBooksByIds(bookIds: number[]): Promise<Book[]> {
+  if (bookIds.length === 0) {
+    return [];
+  }
+
+  const books = await prisma.book.findMany({
+    where: {
+      id: {
+        in: bookIds,
+      },
+    },
+    include: bookInclude,
+  });
+
+  const mapped = await mapBooks(books);
+  const order = new Map(bookIds.map((bookId, index) => [bookId, index]));
+
+  return mapped.sort((left, right) => (order.get(left.book_id) ?? 0) - (order.get(right.book_id) ?? 0));
 }
 
 export async function getBookById(bookId: number): Promise<Book | null> {
-  const result = await pool.query(
-    `SELECT b.*,
-            MAX(bs.average_rating) AS average_rating,
-            MAX(bs.total_reviews) AS total_reviews,
-            COALESCE(array_agg(bc.course_name) FILTER (WHERE bc.course_name IS NOT NULL), '{}') AS courses
-     FROM books b
-     LEFT JOIN book_statistics_view bs ON bs.book_id = b.book_id
-     LEFT JOIN book_courses bc ON bc.book_id = b.book_id
-     WHERE b.book_id = $1
-     GROUP BY b.book_id`,
-    [bookId]
-  );
-  return result.rows[0] || null;
+  const book = await prisma.book.findUnique({
+    where: {
+      id: bookId,
+    },
+    include: bookInclude,
+  });
+
+  if (!book) {
+    return null;
+  }
+
+  const [mapped] = await mapBooks([book]);
+  return mapped ?? null;
 }
 
 export async function searchBooks(searchTerm: string): Promise<Book[]> {
-  const result = await pool.query(
-    `SELECT b.*,
-            MAX(bs.average_rating) AS average_rating,
-            MAX(bs.total_reviews) AS total_reviews,
-            COALESCE(array_agg(bc.course_name) FILTER (WHERE bc.course_name IS NOT NULL), '{}') AS courses
-     FROM books b
-     LEFT JOIN book_statistics_view bs ON bs.book_id = b.book_id
-     LEFT JOIN book_courses bc ON bc.book_id = b.book_id
-     WHERE b.title ILIKE $1 OR b.author ILIKE $1 OR b.genre ILIKE $1
-     GROUP BY b.book_id
-     ORDER BY b.title`,
-    [`%${searchTerm}%`]
-  );
-  return result.rows;
+  const books = await prisma.book.findMany({
+    where: {
+      OR: [
+        { title: { contains: searchTerm, mode: 'insensitive' } },
+        { author: { contains: searchTerm, mode: 'insensitive' } },
+        { genre: { contains: searchTerm, mode: 'insensitive' } },
+      ],
+    },
+    orderBy: {
+      title: 'asc',
+    },
+    include: bookInclude,
+  });
+
+  return mapBooks(books);
 }
 
 export async function getBooksByGenre(genre: string): Promise<Book[]> {
-  const result = await pool.query(
-    `SELECT b.*,
-            MAX(bs.average_rating) AS average_rating,
-            MAX(bs.total_reviews) AS total_reviews,
-            COALESCE(array_agg(bc.course_name) FILTER (WHERE bc.course_name IS NOT NULL), '{}') AS courses
-     FROM books b
-     LEFT JOIN book_statistics_view bs ON bs.book_id = b.book_id
-     LEFT JOIN book_courses bc ON bc.book_id = b.book_id
-     WHERE b.genre = $1
-     GROUP BY b.book_id
-     ORDER BY b.title`,
-    [genre]
-  );
-  return result.rows;
+  const books = await prisma.book.findMany({
+    where: {
+      genre,
+    },
+    orderBy: {
+      title: 'asc',
+    },
+    include: bookInclude,
+  });
+
+  return mapBooks(books);
 }
 
 export async function getFeaturedBooks(): Promise<Book[]> {
-  const result = await pool.query(
-    `SELECT b.*,
-            MAX(bs.average_rating) AS average_rating,
-            MAX(bs.total_reviews) AS total_reviews,
-            COALESCE(array_agg(bc.course_name) FILTER (WHERE bc.course_name IS NOT NULL), '{}') AS courses
-     FROM books b
-     LEFT JOIN book_statistics_view bs ON bs.book_id = b.book_id
-     LEFT JOIN book_courses bc ON bc.book_id = b.book_id
-     WHERE b.featured = true
-     GROUP BY b.book_id
-     ORDER BY b.title`
-  );
-  return result.rows;
+  const books = await prisma.book.findMany({
+    where: {
+      featured: true,
+    },
+    orderBy: {
+      title: 'asc',
+    },
+    include: bookInclude,
+  });
+
+  return mapBooks(books);
 }
 
 export async function getNewAcquisitions(limit = 10): Promise<Book[]> {
-  const result = await pool.query(
-    `SELECT b.*,
-            MAX(bs.average_rating) AS average_rating,
-            MAX(bs.total_reviews) AS total_reviews,
-            COALESCE(array_agg(bc.course_name) FILTER (WHERE bc.course_name IS NOT NULL), '{}') AS courses
-     FROM books b
-     LEFT JOIN book_statistics_view bs ON bs.book_id = b.book_id
-     LEFT JOIN book_courses bc ON bc.book_id = b.book_id
-     GROUP BY b.book_id
-     ORDER BY b.date_added DESC
-     LIMIT $1`,
-    [limit]
+  const books = await prisma.book.findMany({
+    take: limit,
+    orderBy: {
+      dateAdded: 'desc',
+    },
+    include: bookInclude,
+  });
+
+  return mapBooks(books);
+}
+
+export async function createBook(bookData: CreateBookInput): Promise<Book> {
+  const stockQuantity = Math.max(1, normalizeNonNegativeInteger(bookData.stock_quantity, 1));
+  const availableCopies = Math.max(
+    0,
+    Math.min(stockQuantity, normalizeNonNegativeInteger(bookData.available_copies, stockQuantity))
   );
-  return result.rows;
+  const courses = normalizeCourses(bookData.courses);
+
+  const book = await prisma.book.create({
+    data: {
+      title: bookData.title.trim(),
+      author: bookData.author.trim(),
+      genre: bookData.genre.trim(),
+      description: bookData.description ?? null,
+      pages: bookData.pages ?? null,
+      publicationYear: bookData.publication_year ?? null,
+      stockQuantity,
+      availableCopies,
+      status: bookData.status ?? (availableCopies > 0 ? 'Available' : 'Borrowed'),
+      location: bookData.location ?? null,
+      colorTheme: bookData.color_theme ?? null,
+      featured: bookData.featured ?? false,
+      courses: courses.length > 0
+        ? {
+            create: courses.map((courseName) => ({
+              courseName,
+            })),
+          }
+        : undefined,
+    },
+    include: bookInclude,
+  });
+
+  const [mappedBook] = await mapBooks([book]);
+  if (!mappedBook) {
+    throw new Error('Failed to map created book.');
+  }
+  return mappedBook;
+}
+
+export async function updateBookFeatured(bookId: number, featured: boolean): Promise<Book> {
+  const book = await prisma.book.update({
+    where: {
+      id: bookId,
+    },
+    data: {
+      featured,
+    },
+    include: bookInclude,
+  });
+
+  const [mappedBook] = await mapBooks([book]);
+  if (!mappedBook) {
+    throw new Error('Failed to map updated book.');
+  }
+  return mappedBook;
+}
+
+export async function deleteBook(bookId: number): Promise<boolean> {
+  try {
+    await prisma.book.delete({
+      where: {
+        id: bookId,
+      },
+    });
+
+    return true;
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+      return false;
+    }
+
+    throw error;
+  }
 }
 
 export async function incrementBookViews(bookId: number): Promise<void> {
-  await pool.query('UPDATE books SET views = views + 1 WHERE book_id = $1', [bookId]);
+  await prisma.book.update({
+    where: {
+      id: bookId,
+    },
+    data: {
+      views: {
+        increment: 1,
+      },
+    },
+  });
 }
 
 // ============================================================
@@ -311,117 +746,137 @@ export async function borrowBook(
   bookId: number,
   dueDate: Date
 ): Promise<BorrowRecord> {
-  const client = await pool.connect();
-  try {
-    await client.query('BEGIN');
+  const borrow = await prisma.$transaction(async (tx) => {
+    const book = await tx.book.findUnique({
+      where: { id: bookId },
+      select: {
+        availableCopies: true,
+      },
+    });
 
-    // Create borrow record
-    const borrowResult = await client.query(
-      `INSERT INTO borrow_records (user_id, book_id, due_date, status)
-       VALUES ($1, $2, $3, 'active')
-       RETURNING *`,
-      [userId, bookId, dueDate]
-    );
+    if (!book || book.availableCopies <= 0) {
+      throw new Error('Book is not available');
+    }
 
-    // Update book availability
-    await client.query(
-      `UPDATE books 
-       SET available_copies = available_copies - 1,
-           status = CASE WHEN available_copies - 1 = 0 THEN 'Borrowed' ELSE status END
-       WHERE book_id = $1`,
-      [bookId]
-    );
+    const createdBorrow = await tx.borrowRecord.create({
+      data: {
+        userId,
+        bookId,
+        dueDate,
+        status: 'active',
+      },
+      include: borrowInclude,
+    });
 
-    await client.query('COMMIT');
-    return borrowResult.rows[0];
-  } catch (error) {
-    await client.query('ROLLBACK');
-    throw error;
-  } finally {
-    client.release();
-  }
+    await tx.book.update({
+      where: {
+        id: bookId,
+      },
+      data: {
+        availableCopies: {
+          decrement: 1,
+        },
+        status: book.availableCopies - 1 === 0 ? 'Borrowed' : undefined,
+      },
+    });
+
+    return createdBorrow;
+  });
+
+  return mapBorrowRecord(borrow);
 }
 
 export async function returnBook(borrowId: number): Promise<BorrowRecord | null> {
-  const client = await pool.connect();
-  try {
-    await client.query('BEGIN');
+  const borrow = await prisma.$transaction(async (tx) => {
+    const existing = await tx.borrowRecord.findUnique({
+      where: {
+        id: borrowId,
+      },
+      select: {
+        bookId: true,
+      },
+    });
 
-    // Get the book_id from the borrow record
-    const borrowResult = await client.query(
-      'SELECT book_id FROM borrow_records WHERE borrow_id = $1',
-      [borrowId]
-    );
-
-    if (borrowResult.rows.length === 0) {
-      throw new Error('Borrow record not found');
+    if (!existing) {
+      return null;
     }
 
-    const bookId = borrowResult.rows[0].book_id;
+    const updatedBorrow = await tx.borrowRecord.update({
+      where: {
+        id: borrowId,
+      },
+      data: {
+        returnedDate: new Date(),
+        status: 'returned',
+      },
+      include: borrowInclude,
+    });
 
-    // Update borrow record
-    const updateResult = await client.query(
-      `UPDATE borrow_records 
-       SET returned_date = CURRENT_TIMESTAMP, status = 'returned'
-       WHERE borrow_id = $1
-       RETURNING *`,
-      [borrowId]
-    );
+    await tx.book.update({
+      where: {
+        id: existing.bookId,
+      },
+      data: {
+        availableCopies: {
+          increment: 1,
+        },
+        status: 'Available',
+        borrowCount: {
+          increment: 1,
+        },
+      },
+    });
 
-    // Update book availability and increment borrow count
-    await client.query(
-      `UPDATE books 
-       SET available_copies = available_copies + 1,
-           status = 'Available',
-           borrow_count = borrow_count + 1
-       WHERE book_id = $1`,
-      [bookId]
-    );
+    return updatedBorrow;
+  });
 
-    await client.query('COMMIT');
-    return updateResult.rows[0];
-  } catch (error) {
-    await client.query('ROLLBACK');
-    throw error;
-  } finally {
-    client.release();
-  }
+  return borrow ? mapBorrowRecord(borrow) : null;
 }
 
 export async function getActiveBorrowsByUserId(userId: string): Promise<BorrowRecord[]> {
-  const result = await pool.query(
-    `SELECT br.*, b.title, b.author, b.color_theme
-     FROM borrow_records br
-     JOIN books b ON br.book_id = b.book_id
-     WHERE br.user_id = $1 AND br.status = 'active'
-     ORDER BY br.due_date`,
-    [userId]
-  );
-  return result.rows;
+  const borrows = await prisma.borrowRecord.findMany({
+    where: {
+      userId,
+      status: 'active',
+    },
+    orderBy: {
+      dueDate: 'asc',
+    },
+    include: borrowInclude,
+  });
+
+  return borrows.map(mapBorrowRecord);
 }
 
 export async function getBorrowHistoryByUserId(userId: string): Promise<BorrowRecord[]> {
-  const result = await pool.query(
-    `SELECT br.*, b.title, b.author, b.color_theme
-     FROM borrow_records br
-     JOIN books b ON br.book_id = b.book_id
-     WHERE br.user_id = $1
-     ORDER BY br.borrowed_date DESC`,
-    [userId]
-  );
-  return result.rows;
+  const borrows = await prisma.borrowRecord.findMany({
+    where: {
+      userId,
+    },
+    orderBy: {
+      borrowedDate: 'desc',
+    },
+    include: borrowInclude,
+  });
+
+  return borrows.map(mapBorrowRecord);
 }
 
 export async function getOverdueBorrows(): Promise<BorrowRecord[]> {
-  const result = await pool.query(
-    `SELECT br.*, b.title, b.author, b.color_theme, u.username, u.email
-     FROM borrow_records br
-     JOIN books b ON br.book_id = b.book_id
-     JOIN users u ON br.user_id = u.user_id
-     WHERE br.status = 'active' AND br.due_date < CURRENT_TIMESTAMP
-     ORDER BY br.due_date`
-  );
-  return result.rows;
+  const borrows = await prisma.borrowRecord.findMany({
+    where: {
+      status: 'active',
+      dueDate: {
+        lt: new Date(),
+      },
+    },
+    orderBy: {
+      dueDate: 'asc',
+    },
+    include: borrowInclude,
+  });
+
+  return borrows.map(mapBorrowRecord);
 }
 
 // ============================================================
@@ -429,39 +884,52 @@ export async function getOverdueBorrows(): Promise<BorrowRecord[]> {
 // ============================================================
 
 export async function createAccountRequest(
-  requestData: Partial<AccountRequest> & { full_name: string; email: string; requested_role: string; user_type: string }
+  requestData: Partial<AccountRequest> & {
+    full_name: string;
+    email: string;
+    requested_role: string;
+    user_type: string;
+  }
 ): Promise<AccountRequest> {
-  const {
-    full_name,
-    email,
-    requested_role,
-    user_type,
-    course,
-    department,
-    id_document,
-  } = requestData;
+  const record = await prisma.accountRequest.create({
+    data: {
+      fullName: requestData.full_name,
+      email: requestData.email,
+      requestedRole: toUserRole(requestData.requested_role),
+      userType: requestData.user_type,
+      course: requestData.course ?? null,
+      department: requestData.department ?? null,
+      yearLevel: requestData.year_level ?? null,
+      idDocumentPath:
+        requestData.id_document_path ??
+        ((requestData as Partial<{ id_document: string }>).id_document ?? null),
+    },
+  });
 
-  const result = await pool.query(
-    `INSERT INTO account_requests (
-      full_name, email, requested_role, user_type, course, department, id_document_path
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7)
-    RETURNING *`,
-    [full_name, email, requested_role, user_type, course || null, department || null, id_document || null]
-  );
-
-  return result.rows[0];
+  return mapAccountRequestRecord(record);
 }
 
 export async function getAllAccountRequests(): Promise<AccountRequest[]> {
-  const result = await pool.query('SELECT * FROM account_requests ORDER BY requested_at DESC');
-  return result.rows;
+  const requests = await prisma.accountRequest.findMany({
+    orderBy: {
+      requestedAt: 'desc',
+    },
+  });
+
+  return requests.map(mapAccountRequestRecord);
 }
 
 export async function getPendingAccountRequests(): Promise<AccountRequest[]> {
-  const result = await pool.query(
-    "SELECT * FROM account_requests WHERE status = 'pending' ORDER BY requested_at DESC"
-  );
-  return result.rows;
+  const requests = await prisma.accountRequest.findMany({
+    where: {
+      status: 'pending',
+    },
+    orderBy: {
+      requestedAt: 'desc',
+    },
+  });
+
+  return requests.map(mapAccountRequestRecord);
 }
 
 export async function approveAccountRequest(
@@ -469,14 +937,19 @@ export async function approveAccountRequest(
   reviewedBy: string,
   reviewNotes?: string
 ): Promise<AccountRequest | null> {
-  const result = await pool.query(
-    `UPDATE account_requests 
-     SET status = 'approved', reviewed_by = $1, reviewed_at = CURRENT_TIMESTAMP, review_notes = $2
-     WHERE request_id = $3
-     RETURNING *`,
-    [reviewedBy, reviewNotes, requestId]
-  );
-  return result.rows[0] || null;
+  const request = await prisma.accountRequest.update({
+    where: {
+      id: requestId,
+    },
+    data: {
+      status: 'approved',
+      reviewedById: reviewedBy,
+      reviewedAt: new Date(),
+      reviewNotes: reviewNotes ?? null,
+    },
+  });
+
+  return request ? mapAccountRequestRecord(request) : null;
 }
 
 export async function rejectAccountRequest(
@@ -484,14 +957,19 @@ export async function rejectAccountRequest(
   reviewedBy: string,
   reviewNotes: string
 ): Promise<AccountRequest | null> {
-  const result = await pool.query(
-    `UPDATE account_requests 
-     SET status = 'rejected', reviewed_by = $1, reviewed_at = CURRENT_TIMESTAMP, review_notes = $2
-     WHERE request_id = $3
-     RETURNING *`,
-    [reviewedBy, reviewNotes, requestId]
-  );
-  return result.rows[0] || null;
+  const request = await prisma.accountRequest.update({
+    where: {
+      id: requestId,
+    },
+    data: {
+      status: 'rejected',
+      reviewedById: reviewedBy,
+      reviewedAt: new Date(),
+      reviewNotes,
+    },
+  });
+
+  return request ? mapAccountRequestRecord(request) : null;
 }
 
 // ============================================================
@@ -499,18 +977,18 @@ export async function rejectAccountRequest(
 // ============================================================
 
 export async function getDatabaseStatistics() {
-  const [users, books, activeBorrows, pendingRequests] = await Promise.all([
-    pool.query('SELECT COUNT(*) as count FROM users'),
-    pool.query('SELECT COUNT(*) as count FROM books'),
-    pool.query("SELECT COUNT(*) as count FROM borrow_records WHERE status = 'active'"),
-    pool.query("SELECT COUNT(*) as count FROM account_requests WHERE status = 'pending'"),
+  const [totalUsers, totalBooks, activeBorrows, pendingRequests] = await Promise.all([
+    prisma.user.count(),
+    prisma.book.count(),
+    prisma.borrowRecord.count({ where: { status: 'active' } }),
+    prisma.accountRequest.count({ where: { status: 'pending' } }),
   ]);
 
   return {
-    totalUsers: parseInt(users.rows[0].count, 10),
-    totalBooks: parseInt(books.rows[0].count, 10),
-    activeBorrows: parseInt(activeBorrows.rows[0].count, 10),
-    pendingRequests: parseInt(pendingRequests.rows[0].count, 10),
+    totalUsers,
+    totalBooks,
+    activeBorrows,
+    pendingRequests,
   };
 }
 
@@ -519,16 +997,27 @@ export async function getDatabaseStatistics() {
 // ============================================================
 
 export async function getJournals(subject?: string): Promise<Journal[]> {
-  if (subject) {
-    const result = await pool.query(
-      'SELECT * FROM journals WHERE subject = $1 ORDER BY title',
-      [subject]
-    );
-    return result.rows;
-  }
+  const journals = await prisma.journal.findMany({
+    where: subject
+      ? {
+          subject,
+        }
+      : undefined,
+    orderBy: {
+      title: 'asc',
+    },
+  });
 
-  const result = await pool.query('SELECT * FROM journals ORDER BY title');
-  return result.rows;
+  return journals.map((journal) => ({
+    journal_id: journal.id,
+    title: journal.title,
+    publisher: journal.publisher,
+    subject: journal.subject,
+    impact_factor: journal.impactFactor ? Number(journal.impactFactor) : null,
+    access_url: journal.accessUrl,
+    journal_type: journalTypeLabels[journal.journalType],
+    created_at: journal.createdAt,
+  }));
 }
 
 // ============================================================
@@ -536,37 +1025,54 @@ export async function getJournals(subject?: string): Promise<Journal[]> {
 // ============================================================
 
 export async function getReadingListsByFacultyId(facultyId: string): Promise<ReadingList[]> {
-  const result = await pool.query(
-    `SELECT rl.*,
-            COALESCE(array_agg(rlb.book_id) FILTER (WHERE rlb.book_id IS NOT NULL), '{}') AS book_ids
-     FROM reading_lists rl
-     LEFT JOIN reading_list_books rlb ON rlb.reading_list_id = rl.reading_list_id
-     WHERE rl.faculty_id = $1
-     GROUP BY rl.reading_list_id
-     ORDER BY rl.created_at DESC`,
-    [facultyId]
-  );
-  return result.rows;
+  const readingLists = await prisma.readingList.findMany({
+    where: {
+      facultyId,
+    },
+    include: {
+      books: {
+        select: {
+          bookId: true,
+        },
+      },
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
+  });
+
+  return readingLists.map((list) => ({
+    reading_list_id: list.id,
+    title: list.title,
+    faculty_id: list.facultyId,
+    description: list.description,
+    student_count: list.studentCount,
+    is_active: list.isActive,
+    created_at: list.createdAt,
+    updated_at: list.updatedAt,
+    book_ids: list.books.map((book) => book.bookId),
+  }));
 }
 
 // ============================================================
 // NOTIFICATIONS
 // ============================================================
 
-export async function getNotificationsByUserId(userId: string, unreadOnly = false): Promise<Notification[]> {
-  if (unreadOnly) {
-    const result = await pool.query(
-      'SELECT * FROM notifications WHERE user_id = $1 AND is_read = false ORDER BY created_at DESC',
-      [userId]
-    );
-    return result.rows;
-  }
+export async function getNotificationsByUserId(
+  userId: string,
+  unreadOnly = false
+): Promise<Notification[]> {
+  const notifications = await prisma.notification.findMany({
+    where: {
+      userId,
+      ...(unreadOnly ? { isRead: false } : {}),
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
+  });
 
-  const result = await pool.query(
-    'SELECT * FROM notifications WHERE user_id = $1 ORDER BY created_at DESC',
-    [userId]
-  );
-  return result.rows;
+  return notifications.map(mapNotificationRecord);
 }
 
 // ============================================================
@@ -574,9 +1080,118 @@ export async function getNotificationsByUserId(userId: string, unreadOnly = fals
 // ============================================================
 
 export async function getReviewsByBookId(bookId: number): Promise<Review[]> {
-  const result = await pool.query(
-    'SELECT * FROM reviews WHERE book_id = $1 ORDER BY created_at DESC',
-    [bookId]
-  );
-  return result.rows;
+  const reviews = await prisma.review.findMany({
+    where: {
+      bookId,
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
+  });
+
+  return reviews.map(mapReviewRecord);
+}
+
+// ============================================================
+// WISHLIST
+// ============================================================
+
+export async function getWishlistByUserId(userId: string): Promise<WishlistItem[]> {
+  const items = await prisma.wishlistItem.findMany({
+    where: {
+      userId,
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
+  });
+
+  return items.map((item) => ({
+    wishlist_id: item.id,
+    user_id: item.userId,
+    book_id: item.bookId,
+    created_at: item.createdAt,
+  }));
+}
+
+export async function getWishlistBookIdsByUserId(userId: string): Promise<number[]> {
+  const items = await prisma.wishlistItem.findMany({
+    where: {
+      userId,
+    },
+    select: {
+      bookId: true,
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
+  });
+
+  return items.map((item) => item.bookId);
+}
+
+export async function addWishlistItem(userId: string, bookId: number): Promise<WishlistItem> {
+  const item = await prisma.wishlistItem.upsert({
+    where: {
+      userId_bookId: {
+        userId,
+        bookId,
+      },
+    },
+    update: {},
+    create: {
+      userId,
+      bookId,
+    },
+  });
+
+  return {
+    wishlist_id: item.id,
+    user_id: item.userId,
+    book_id: item.bookId,
+    created_at: item.createdAt,
+  };
+}
+
+export async function removeWishlistItem(userId: string, bookId: number): Promise<void> {
+  await prisma.wishlistItem.deleteMany({
+    where: {
+      userId,
+      bookId,
+    },
+  });
+}
+
+export async function syncWishlistItems(userId: string, bookIds: number[]): Promise<number[]> {
+  return prisma.$transaction(async (tx) => {
+    await tx.wishlistItem.deleteMany({
+      where: {
+        userId,
+      },
+    });
+
+    if (bookIds.length > 0) {
+      await tx.wishlistItem.createMany({
+        data: Array.from(new Set(bookIds)).map((bookId) => ({
+          userId,
+          bookId,
+        })),
+        skipDuplicates: true,
+      });
+    }
+
+    const items = await tx.wishlistItem.findMany({
+      where: {
+        userId,
+      },
+      select: {
+        bookId: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return items.map((item) => item.bookId);
+  });
 }
