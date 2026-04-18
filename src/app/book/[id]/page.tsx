@@ -1,7 +1,7 @@
 "use client";
 
 import Navbar from '@/app/components/Navbar';
-import { Star, Clock, BookOpen, Calendar, ArrowLeft, Heart, Share2, MessageSquare, User as UserIcon } from 'lucide-react';
+import { Clock, BookOpen, Calendar, ArrowLeft, Share2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useState, useEffect, use } from 'react';
@@ -14,20 +14,10 @@ interface Book {
   author: string;
   genre: string;
   color: string;
-  rating?: number;
-  reviewCount?: number;
   pages?: number;
   year?: number;
   description?: string;
   stock: boolean;
-}
-
-interface Review {
-  id: number;
-  userName: string;
-  rating: number;
-  comment?: string;
-  timestamp: string;
 }
 
 export default function BookDetailsPage({ params }: { params: Promise<{ id: string }> }) {
@@ -36,7 +26,6 @@ export default function BookDetailsPage({ params }: { params: Promise<{ id: stri
   const unwrappedParams = use(params);
   const bookId = parseInt(unwrappedParams.id);
   const [book, setBook] = useState<Book | null>(null);
-  const [reviews, setReviews] = useState<Review[]>([]);
   const [relatedBooks, setRelatedBooks] = useState<Book[]>([]);
   const [isBorrowed, setIsBorrowed] = useState(false);
   const [isBorrowModalOpen, setIsBorrowModalOpen] = useState(false);
@@ -68,16 +57,10 @@ export default function BookDetailsPage({ params }: { params: Promise<{ id: stri
         const fetchedBook = bookData.book as Book;
         if (isMounted) setBook(fetchedBook);
 
-        const [reviewsRes, borrowsRes, relatedRes] = await Promise.all([
-          fetch(`/api/reviews?bookId=${bookId}`, { headers: { Authorization: `Bearer ${token}` } }),
+        const [borrowsRes, relatedRes] = await Promise.all([
           fetch('/api/borrows', { headers: { Authorization: `Bearer ${token}` } }),
           fetch(`/api/books?genre=${encodeURIComponent(fetchedBook.genre)}&limit=6`, { headers: { Authorization: `Bearer ${token}` } }),
         ]);
-
-        if (reviewsRes.ok) {
-          const data = await reviewsRes.json();
-          if (isMounted) setReviews(data.reviews || []);
-        }
 
         if (borrowsRes.ok) {
           const data = await borrowsRes.json();
@@ -242,14 +225,6 @@ export default function BookDetailsPage({ params }: { params: Promise<{ id: stri
             {/* Stats Row */}
             <div className="flex flex-wrap gap-6 py-6 border-y border-gray-100 mb-8">
                <div className="flex items-center gap-3">
-                  <Star className="text-orange-400 fill-orange-400" size={24} />
-                  <div>
-                    <div className="text-lg font-bold text-gray-900">{book.rating}</div>
-                    <div className="text-xs text-gray-500">{book.reviewCount || 0} reviews</div>
-                  </div>
-               </div>
-               <div className="w-px h-10 bg-gray-200"></div>
-               <div className="flex items-center gap-3">
                   <BookOpen className="text-gray-400" size={24} />
                   <div>
                     <div className="text-lg font-bold text-gray-900">{book.pages || '---'}</div>
@@ -272,45 +247,6 @@ export default function BookDetailsPage({ params }: { params: Promise<{ id: stri
               <p className="text-gray-600 leading-relaxed text-lg">
                 {book.description || "No description available for this book."}
               </p>
-            </div>
-
-            {/* Peer Reviews Section */}
-            <div className="mb-12">
-               <div className="flex items-center gap-3 mb-6">
-                 <div className="p-2 bg-blue-100 rounded-lg text-blue-600">
-                    <MessageSquare size={20} />
-                 </div>
-                 <h3 className="text-xl font-bold text-gray-900">Peer Reviews</h3>
-               </div>
-               
-               <div className="space-y-4">
-                  {reviews.length > 0 ? reviews.map(review => (
-                     <div key={review.id} className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
-                        <div className="flex items-center justify-between mb-3">
-                           <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-gray-400">
-                                 <UserIcon size={20} />
-                              </div>
-                              <div>
-                                 <p className="font-bold text-gray-900 text-sm">{review.userName}</p>
-                                 <p className="text-[10px] text-gray-400 uppercase tracking-wider font-bold">{new Date(review.timestamp).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
-                              </div>
-                           </div>
-                           <div className="flex items-center gap-1 bg-orange-50 px-2 py-1 rounded-lg">
-                              <Star size={14} className="fill-orange-400 text-orange-400" />
-                              <span className="text-sm font-bold text-orange-700">{review.rating}</span>
-                           </div>
-                        </div>
-                        <p className="text-gray-600 text-sm italic leading-relaxed">
-                           "{review.comment}"
-                        </p>
-                     </div>
-                  )) : (
-                     <div className="text-center py-10 bg-gray-50 rounded-xl border border-dashed border-gray-200">
-                        <p className="text-gray-500 text-sm">No peer reviews yet. Be the first to review!</p>
-                     </div>
-                  )}
-               </div>
             </div>
 
             {/* Related Books Section */}

@@ -56,8 +56,6 @@ export interface Book {
   featured: boolean;
   date_added?: Date;
   courses?: string[];
-  average_rating?: number | null;
-  total_reviews?: number | null;
 }
 
 export interface CreateBookInput {
@@ -140,17 +138,6 @@ export interface Notification {
   book_id?: number | null;
   is_read: boolean;
   created_at: Date;
-}
-
-export interface Review {
-  review_id: number;
-  book_id: number;
-  user_id: string | null;
-  user_name: string;
-  rating: number;
-  comment?: string | null;
-  created_at: Date;
-  updated_at: Date;
 }
 
 const studentTypeLabels: Record<StudentUserType, string> = {
@@ -302,43 +289,8 @@ function mapUserRecord(user: {
   };
 }
 
-async function getReviewStatsForBooks(bookIds: number[]) {
-  if (bookIds.length === 0) {
-    return new Map<number, { averageRating: number | null; totalReviews: number }>();
-  }
-
-  const stats = await prisma.review.groupBy({
-    by: ['bookId'],
-    where: {
-      bookId: {
-        in: bookIds,
-      },
-    },
-    _avg: {
-      rating: true,
-    },
-    _count: {
-      _all: true,
-    },
-  });
-
-  return new Map(
-    stats.map((stat) => [
-      stat.bookId,
-      {
-        averageRating: stat._avg.rating ? Number(stat._avg.rating) : null,
-        totalReviews: stat._count._all,
-      },
-    ])
-  );
-}
-
 async function mapBooks(records: BookRecord[]): Promise<Book[]> {
-  const stats = await getReviewStatsForBooks(records.map((record) => record.id));
-
   return records.map((record) => {
-    const bookStats = stats.get(record.id);
-
     return {
       book_id: record.id,
       title: record.title,
@@ -357,8 +309,6 @@ async function mapBooks(records: BookRecord[]): Promise<Book[]> {
       featured: record.featured,
       date_added: record.dateAdded,
       courses: record.courses.map((course) => course.courseName),
-      average_rating: bookStats?.averageRating ?? null,
-      total_reviews: bookStats?.totalReviews ?? 0,
     };
   });
 }
@@ -433,28 +383,6 @@ function mapNotificationRecord(record: {
     book_id: record.bookId,
     is_read: record.isRead,
     created_at: record.createdAt,
-  };
-}
-
-function mapReviewRecord(record: {
-  id: number;
-  bookId: number;
-  userId: string | null;
-  userName: string;
-  rating: Prisma.Decimal;
-  comment: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-}): Review {
-  return {
-    review_id: record.id,
-    book_id: record.bookId,
-    user_id: record.userId,
-    user_name: record.userName,
-    rating: Number(record.rating),
-    comment: record.comment,
-    created_at: record.createdAt,
-    updated_at: record.updatedAt,
   };
 }
 
@@ -1054,19 +982,4 @@ export async function getNotificationsByUserId(
   return notifications.map(mapNotificationRecord);
 }
 
-// ============================================================
-// REVIEWS
-// ============================================================
 
-export async function getReviewsByBookId(bookId: number): Promise<Review[]> {
-  const reviews = await prisma.review.findMany({
-    where: {
-      bookId,
-    },
-    orderBy: {
-      createdAt: 'desc',
-    },
-  });
-
-  return reviews.map(mapReviewRecord);
-}

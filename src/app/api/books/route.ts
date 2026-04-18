@@ -36,8 +36,6 @@ function mapBookToUi(book: RepositoryBook) {
     featured: book.featured ?? false,
     dateAdded,
     courses,
-    rating: book.average_rating ? Number(book.average_rating) : 0,
-    reviewCount: book.total_reviews ? Number(book.total_reviews) : 0,
   };
 }
 

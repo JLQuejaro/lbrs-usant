@@ -12,14 +12,12 @@ interface Book {
   author: string;
   genre: string;
   color: string;
-  rating?: number;
   year: number;
   stock: boolean;
   courses: string[];
   description?: string;
   pages?: number;
   status?: string;
-  reviewCount?: number;
   dateAdded?: string;
   borrowCount: number;
   views: number;
