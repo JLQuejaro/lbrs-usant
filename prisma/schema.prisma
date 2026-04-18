@@ -97,7 +97,6 @@ model User {
   borrowRecords   BorrowRecord[]
   notifications   Notification[]
   reviews         Review[]
-  wishlistItems   WishlistItem[]
 
   @@index([role], map: "idx_users_role")
   @@index([approvalStatus], map: "idx_users_approval_status")
@@ -153,7 +152,6 @@ model Book {
   notifications   Notification[]
   reviews         Review[]
   readingLists    ReadingListBook[]
-  wishlistItems   WishlistItem[]
 
   @@index([title], map: "idx_books_title")
   @@index([author], map: "idx_books_author")
@@ -273,18 +271,4 @@ model Review {
   @@index([userId], map: "idx_reviews_user_id")
   @@index([rating], map: "idx_reviews_rating")
   @@map("reviews")
-}
-
-model WishlistItem {
-  id        Int      @id @default(autoincrement()) @map("wishlist_id")
-  userId    String   @map("user_id") @db.Uuid
-  bookId    Int      @map("book_id")
-  createdAt DateTime @default(now()) @map("created_at")
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  book      Book     @relation(fields: [bookId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-
-  @@unique([userId, bookId], map: "wishlist_items_user_id_book_id_key")
-  @@index([userId], map: "idx_wishlist_items_user_id")
-  @@index([bookId], map: "idx_wishlist_items_book_id")
-  @@map("wishlist_items")
 }

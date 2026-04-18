@@ -5,12 +5,6 @@ import { Book, Layers, Search, Clock, SlidersHorizontal, RotateCcw, X, History, 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/app/contexts/AuthContext';
-import {
-  addWishlistBook,
-  fetchWishlist,
-  removeWishlistBook,
-  syncLegacyWishlist,
-} from '@/app/lib/wishlist-client';
 
 interface Book {
   id: number;
@@ -77,8 +71,7 @@ export default function StudentDashboard() {
   const [showFilters, setShowFilters] = useState(true);
   const [books, setBooks] = useState<Book[]>([]);
   
-  // Wishlist & Notification Stats
-  const [wishlist, setWishlist] = useState<number[]>([]);
+  // Notification Stats
   const [unreadCount, setUnreadCount] = useState(0);
   const [borrowCount, setBorrowCount] = useState(0);
 
@@ -115,7 +108,6 @@ export default function StudentDashboard() {
 
   useEffect(() => {
     if (!token) {
-      setWishlist([]);
       return;
     }
 
@@ -123,21 +115,11 @@ export default function StudentDashboard() {
 
     const loadData = async () => {
       try {
-        await syncLegacyWishlist(token).catch((error) => {
-          console.error('Failed to migrate legacy wishlist:', error);
-        });
-
-        const wishlistPromise = fetchWishlist(token).catch((error) => {
-          console.error('Failed to load wishlist:', error);
-          return null;
-        });
-
         const [booksRes, notificationsRes, borrowsRes] = await Promise.all([
           fetch('/api/books?limit=1000', { headers: { Authorization: `Bearer ${token}` } }),
           fetch('/api/notifications?unread=true', { headers: { Authorization: `Bearer ${token}` } }),
           fetch('/api/borrows', { headers: { Authorization: `Bearer ${token}` } }),
         ]);
-        const wishlistData = await wishlistPromise;
 
         if (booksRes.ok) {
           const data = await booksRes.json();
@@ -153,10 +135,6 @@ export default function StudentDashboard() {
           const data = await borrowsRes.json();
           if (isMounted) setBorrowCount(data.count ?? data.borrows?.length ?? 0);
         }
-
-        if (wishlistData && isMounted) {
-          setWishlist(wishlistData.bookIds || []);
-        }
       } catch (error) {
         console.error('Failed to load student dashboard data:', error);
       }
@@ -167,22 +145,6 @@ export default function StudentDashboard() {
       isMounted = false;
     };
   }, [token]);
-
-  const handleToggleWishlist = async (e: React.MouseEvent, bookId: number) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    if (!token) return;
-
-    try {
-      const newWishlist = wishlist.includes(bookId)
-        ? await removeWishlistBook(token, bookId)
-        : await addWishlistBook(token, bookId);
-      setWishlist(newWishlist);
-    } catch (error) {
-      console.error('Failed to update wishlist:', error);
-    }
-  };
 
   const addToRecent = (term: string) => {
     if (!term.trim()) return;
@@ -260,16 +222,7 @@ export default function StudentDashboard() {
       <main className="max-w-7xl mx-auto px-8 -mt-16 pb-12 relative z-20">
         
         {/* === QUICK ACCESS OVERVIEW === */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-           <Link href="/student/wishlist-page" className="bg-white p-5 rounded-2xl shadow-lg border border-gray-100 flex items-center gap-4 hover:border-usant-red/30 transition-all group">
-              <div className="p-3 bg-red-50 rounded-xl text-usant-red group-hover:bg-usant-red group-hover:text-white transition-colors">
-                 <Heart size={24} className={wishlist.length > 0 ? 'fill-current' : ''} />
-              </div>
-              <div>
-                 <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">My Wishlist</p>
-                 <p className="text-2xl font-black text-gray-900">{wishlist.length} <span className="text-sm font-medium text-gray-500">Books Saved</span></p>
-              </div>
-           </Link>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
 
            <Link href="/student/notifications-page" className="bg-white p-5 rounded-2xl shadow-lg border border-gray-100 flex items-center gap-4 hover:border-usant-red/30 transition-all group">
               <div className="p-3 bg-blue-50 rounded-xl text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors relative">
@@ -337,12 +290,6 @@ export default function StudentDashboard() {
                        <h4 className="font-bold text-gray-900 text-sm truncate group-hover:text-usant-red transition-colors">{book.title}</h4>
                        <p className="text-xs text-gray-500 mb-1 truncate">{book.author}</p>
                     </div>
-                    <button
-                       onClick={(e) => handleToggleWishlist(e, book.id)}
-                       className={`p-1.5 rounded-full hover:bg-white shadow-sm transition-all ${wishlist.includes(book.id) ? 'text-red-500' : 'text-gray-300'}`}
-                    >
-                       <Heart size={14} className={wishlist.includes(book.id) ? 'fill-current' : ''} />
-                    </button>
                  </Link>
               ))}
            </div>
@@ -372,12 +319,6 @@ export default function StudentDashboard() {
                        <h4 className="font-bold text-gray-900 text-sm truncate group-hover:text-blue-600 transition-colors">{book.title}</h4>
                        <p className="text-xs text-gray-500 mb-1 truncate">{book.author}</p>
                     </div>
-                    <button
-                       onClick={(e) => handleToggleWishlist(e, book.id)}
-                       className={`p-1.5 rounded-full hover:bg-white shadow-sm transition-all ${wishlist.includes(book.id) ? 'text-red-500' : 'text-gray-300'}`}
-                    >
-                       <Heart size={14} className={wishlist.includes(book.id) ? 'fill-current' : ''} />
-                    </button>
                  </Link>
               )) : (
                  <div className="col-span-4 py-8 text-center text-gray-400 italic text-sm">
@@ -593,12 +534,6 @@ export default function StudentDashboard() {
                 <div className="pt-4 border-t border-gray-100 flex justify-between items-center mt-auto">
                    <div className="flex items-center gap-2">
                       <span className="text-xs font-medium px-2 py-1 bg-gray-100 rounded text-gray-600 truncate max-w-[80px]">{book.genre}</span>
-                      <button 
-                         onClick={(e) => handleToggleWishlist(e, book.id)}
-                         className={`p-2 rounded-full hover:bg-gray-50 transition-all ${wishlist.includes(book.id) ? 'text-red-500' : 'text-gray-400'}`}
-                      >
-                         <Heart size={18} className={wishlist.includes(book.id) ? 'fill-current' : ''} />
-                      </button>
                    </div>
                    <span className="text-xs font-bold text-usant-red group-hover:underline whitespace-nowrap">View Details</span>
                 </div>

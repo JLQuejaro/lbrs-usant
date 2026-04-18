@@ -7,12 +7,6 @@ import Link from 'next/link';
 import { useState, useEffect, use } from 'react';
 import BorrowModal from '@/app/components/BorrowModal';
 import { useAuth } from '@/app/contexts/AuthContext';
-import {
-  addWishlistBook,
-  fetchWishlist,
-  removeWishlistBook,
-  syncLegacyWishlist,
-} from '@/app/lib/wishlist-client';
 
 interface Book {
   id: number;
@@ -44,14 +38,12 @@ export default function BookDetailsPage({ params }: { params: Promise<{ id: stri
   const [book, setBook] = useState<Book | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [relatedBooks, setRelatedBooks] = useState<Book[]>([]);
-  const [isInWishlist, setIsInWishlist] = useState(false);
   const [isBorrowed, setIsBorrowed] = useState(false);
   const [isBorrowModalOpen, setIsBorrowModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (!token) {
-      setIsInWishlist(false);
       setIsLoading(false);
       return;
     }
@@ -60,15 +52,6 @@ export default function BookDetailsPage({ params }: { params: Promise<{ id: stri
 
     const loadBook = async () => {
       try {
-        await syncLegacyWishlist(token).catch((error) => {
-          console.error('Failed to migrate legacy wishlist:', error);
-        });
-
-        const wishlistPromise = fetchWishlist(token).catch((error) => {
-          console.error('Failed to load wishlist:', error);
-          return null;
-        });
-
         const bookRes = await fetch(`/api/books?id=${bookId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -96,11 +79,6 @@ export default function BookDetailsPage({ params }: { params: Promise<{ id: stri
           if (isMounted) setReviews(data.reviews || []);
         }
 
-        const wishlistData = await wishlistPromise;
-        if (wishlistData && isMounted) {
-          setIsInWishlist(wishlistData.bookIds.includes(bookId));
-        }
-
         if (borrowsRes.ok) {
           const data = await borrowsRes.json();
           const borrowed = (data.borrows || []).some((b: any) => b.bookId === bookId && b.status === 'active');
@@ -124,19 +102,6 @@ export default function BookDetailsPage({ params }: { params: Promise<{ id: stri
       isMounted = false;
     };
   }, [bookId, token]);
-
-  const handleToggleWishlist = async () => {
-    if (!token) return;
-
-    try {
-      const newWishlist = isInWishlist
-        ? await removeWishlistBook(token, bookId)
-        : await addWishlistBook(token, bookId);
-      setIsInWishlist(newWishlist.includes(bookId));
-    } catch (error) {
-      console.error('Failed to update wishlist:', error);
-    }
-  };
 
   const handleModalClose = () => {
     setIsBorrowModalOpen(false);
@@ -252,18 +217,7 @@ export default function BookDetailsPage({ params }: { params: Promise<{ id: stri
                 {isBorrowed ? 'Already Borrowed' : !book.stock ? 'Out of Stock' : 'Borrow Now'}
               </button>
 
-              <div className="grid grid-cols-2 gap-3">
-                 <button 
-                   onClick={handleToggleWishlist}
-                   className={`flex items-center justify-center gap-2 py-2.5 rounded-lg border font-medium text-sm transition ${
-                     isInWishlist 
-                     ? 'bg-red-50 border-red-200 text-usant-red' 
-                     : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                   }`}
-                 >
-                   <Heart size={18} className={isInWishlist ? 'fill-current' : ''} />
-                   {isInWishlist ? 'Saved' : 'Wishlist'}
-                 </button>
+              <div className="grid grid-cols-1 gap-3">
                  <button className="flex items-center justify-center gap-2 py-2.5 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium text-sm transition">
                    <Share2 size={18} /> Share
                  </button>

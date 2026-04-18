@@ -175,7 +175,6 @@ export default function AuthPage() {
               {isRegistering ? 'Join USANT Library System' : 'Sign in to your account'}
             </p>
             <p className="text-xs text-usant-red font-medium mt-2">
-              Only university emails ending in @usant.edu.ph are permitted
             </p>
           </div>
 

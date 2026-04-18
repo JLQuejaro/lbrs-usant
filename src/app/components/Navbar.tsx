@@ -107,9 +107,6 @@ export default function Navbar() {
             <Link href="/student/shelf" className="opacity-90 hover:opacity-100 hover:text-white transition flex items-center gap-2">
               <Library size={16} /> My Shelf
             </Link>
-            <Link href="/student/wishlist-page" className="opacity-90 hover:opacity-100 hover:text-white transition flex items-center gap-2">
-              <Heart size={16} /> Wishlist
-            </Link>
             <Link href="/student/notifications-page" className="relative opacity-90 hover:opacity-100 hover:text-white transition flex items-center gap-2">
               <Bell size={16} /> Notifications
               {unreadCount > 0 && (
