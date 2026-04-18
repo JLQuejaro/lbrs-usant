@@ -22,7 +22,6 @@ interface BorrowRecord {
 export default function MyShelfPage() {
   const router = useRouter();
   const { user, token } = useAuth();
-  const [activeTab, setActiveTab] = useState<'current' | 'history'>('current');
   const [borrows, setBorrows] = useState<BorrowRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const userName = user?.username || 'User';
@@ -44,7 +43,7 @@ export default function MyShelfPage() {
     let isMounted = true;
     const loadBorrows = async () => {
       try {
-        const response = await fetch('/api/borrows?history=true', {
+        const response = await fetch('/api/borrows', {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!response.ok) return;
@@ -72,7 +71,7 @@ export default function MyShelfPage() {
       });
       if (!response.ok) return;
 
-      const refreshed = await fetch('/api/borrows?history=true', {
+      const refreshed = await fetch('/api/borrows', {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (refreshed.ok) {
@@ -83,9 +82,6 @@ export default function MyShelfPage() {
       console.error('Failed to return book:', error);
     }
   };
-
-  const currentBorrows = borrows.filter(b => b.status === 'active');
-  const historyBorrows = borrows.filter(b => b.status !== 'active');
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -109,7 +105,7 @@ export default function MyShelfPage() {
           </div>
           <h1 className="text-4xl font-bold text-white mb-2">My Bookshelf</h1>
           <p className="text-white/90 text-lg">
-            Manage your current borrows and view your reading history.
+            Manage your currently borrowed books.
           </p>
         </div>
       </div>
@@ -141,7 +137,7 @@ export default function MyShelfPage() {
                 <div className="border-t border-gray-100 pt-4 text-left">
                    <div>
                      <span className="block text-xs text-gray-400 uppercase font-bold">Books Out</span>
-                     <span className="block text-lg font-bold text-gray-900">{currentBorrows.length}</span>
+                     <span className="block text-lg font-bold text-gray-900">{borrows.length}</span>
                    </div>
                 </div>
 
@@ -161,114 +157,71 @@ export default function MyShelfPage() {
             </div>
           </div>
 
-          {/* RIGHT: Bookshelf Tabs */}
+          {/* RIGHT: Current Borrows */}
           <div className="md:col-span-8 lg:col-span-9">
              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 min-h-[500px]">
                 
-                {/* Tabs Header */}
-                <div className="flex border-b border-gray-100">
-                  <button 
-                    onClick={() => setActiveTab('current')}
-                    className={`flex-1 py-4 text-sm font-bold text-center border-b-2 transition-colors ${
-                        activeTab === 'current' 
-                        ? 'border-usant-red text-usant-red bg-red-50/50' 
-                        : 'border-transparent text-gray-500 hover:text-gray-700'
-                    }`}
-                  >
-                    Current Borrows ({currentBorrows.length})
-                  </button>
-                  <button 
-                    onClick={() => setActiveTab('history')}
-                    className={`flex-1 py-4 text-sm font-bold text-center border-b-2 transition-colors ${
-                        activeTab === 'history' 
-                        ? 'border-usant-red text-usant-red bg-red-50/50' 
-                        : 'border-transparent text-gray-500 hover:text-gray-700'
-                    }`}
-                  >
-                    Borrowing History
-                  </button>
+                {/* Header */}
+                <div className="border-b border-gray-100 px-6 py-4">
+                  <h2 className="text-xl font-bold text-gray-900">Current Borrows ({borrows.length})</h2>
                 </div>
 
                 {/* Content */}
                 <div className="p-6">
-                  
-                  {activeTab === 'current' && (
-                    <div className="space-y-4">
-                      {isLoading ? (
-                        <div className="flex justify-center py-20">
-                          <Loader2 size={32} className="text-usant-red animate-spin" />
-                        </div>
-                      ) : currentBorrows.length > 0 ? currentBorrows.map((borrow) => {
-                        const isOverdue = new Date(borrow.dueDate) < new Date();
-                        const status = isOverdue ? 'Overdue' : 'Active';
-                        return (
-                        <div key={borrow.id} className="flex flex-col sm:flex-row gap-4 p-4 rounded-xl border border-gray-100 hover:shadow-md transition bg-white group">
-                           {/* Tiny Cover */}
-                           <div className={`w-16 h-24 sm:w-20 sm:h-28 ${borrow.color || 'bg-gray-200'} rounded-md shadow-sm flex-shrink-0`}></div>
+                  <div className="space-y-4">
+                    {isLoading ? (
+                      <div className="flex justify-center py-20">
+                        <Loader2 size={32} className="text-usant-red animate-spin" />
+                      </div>
+                    ) : borrows.length > 0 ? borrows.map((borrow) => {
+                      const isOverdue = new Date(borrow.dueDate) < new Date();
+                      const status = isOverdue ? 'Overdue' : 'Active';
+                      return (
+                      <div key={borrow.id} className="flex flex-col sm:flex-row gap-4 p-4 rounded-xl border border-gray-100 hover:shadow-md transition bg-white group">
+                         {/* Tiny Cover */}
+                         <div className={`w-16 h-24 sm:w-20 sm:h-28 ${borrow.color || 'bg-gray-200'} rounded-md shadow-sm flex-shrink-0`}></div>
+                         
+                         <div className="flex-1">
+                           <h3 className="font-bold text-lg text-gray-900">{borrow.title}</h3>
+                           <p className="text-sm text-gray-500 mb-3">{borrow.author}</p>
                            
-                           <div className="flex-1">
-                             <h3 className="font-bold text-lg text-gray-900">{borrow.title}</h3>
-                             <p className="text-sm text-gray-500 mb-3">{borrow.author}</p>
-                             
-                             <div className="flex flex-wrap gap-4 text-sm">
-                               <div className="flex items-center gap-2 text-gray-600">
-                                  <Calendar size={16} className="text-gray-400" /> 
-                                  <span>Borrowed: {new Date(borrow.borrowedDate).toLocaleDateString()}</span>
-                               </div>
-                               <div className={`flex items-center gap-2 font-medium ${status === 'Overdue' ? 'text-red-600' : 'text-orange-600'}`}>
-                                  <Clock size={16} /> 
-                                  <span>Due: {new Date(borrow.dueDate).toLocaleDateString()}</span>
-                               </div>
+                           <div className="flex flex-wrap gap-4 text-sm">
+                             <div className="flex items-center gap-2 text-gray-600">
+                                <Calendar size={16} className="text-gray-400" /> 
+                                <span>Borrowed: {new Date(borrow.borrowedDate).toLocaleDateString()}</span>
+                             </div>
+                             <div className={`flex items-center gap-2 font-medium ${status === 'Overdue' ? 'text-red-600' : 'text-orange-600'}`}>
+                                <Clock size={16} /> 
+                                <span>Due: {new Date(borrow.dueDate).toLocaleDateString()}</span>
                              </div>
                            </div>
+                         </div>
 
-                           {/* Status & Action */}
-                           <div className="flex flex-row sm:flex-col justify-between items-end gap-2">
-                              <span className={`px-3 py-1 rounded-full text-xs font-bold ${status === 'Overdue' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                                {status}
-                              </span>
-                              <button 
-                                onClick={() => handleReturn(borrow.id)}
-                                className="text-sm font-medium text-usant-red hover:underline flex items-center gap-1"
-                              >
-                                <RotateCcw size={14} /> Return
-                              </button>
-                           </div>
-                        </div>
-                      );
-                      }) : (
-                        <div className="text-center py-20">
-                           <BookIcon size={48} className="text-gray-200 mx-auto mb-4" />
-                           <h3 className="text-lg font-bold text-gray-900">Your shelf is empty</h3>
-                           <p className="text-gray-500 mb-6">Explore the library and start borrowing books!</p>
-                           <Link href="/student#browse" className="bg-usant-red text-white px-6 py-2 rounded-lg font-bold hover:bg-red-800 transition">
-                              Browse Books
-                           </Link>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {activeTab === 'history' && (
-                    <div className="space-y-4">
-                      {historyBorrows.map((borrow) => (
-                        <div key={borrow.id} className="flex items-center gap-4 p-4 rounded-xl border border-gray-100 opacity-75 hover:opacity-100 transition">
-                           <div className={`w-12 h-16 ${borrow.color || 'bg-gray-200'} rounded-md shadow-sm flex-shrink-0`}></div>
-                           <div className="flex-1">
-                             <h3 className="font-bold text-gray-900">{borrow.title}</h3>
-                             <p className="text-xs text-gray-500">{borrow.author}</p>
-                           </div>
-                           <div className="text-right">
-                              <span className="block text-xs text-gray-400 mb-1">Returned on</span>
-                              <span className="block text-sm font-medium text-gray-700">
-                                {borrow.returnedDate ? new Date(borrow.returnedDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '---'}
-                              </span>
-                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
+                         {/* Status & Action */}
+                         <div className="flex flex-row sm:flex-col justify-between items-end gap-2">
+                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${status === 'Overdue' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                              {status}
+                            </span>
+                            <button 
+                              onClick={() => handleReturn(borrow.id)}
+                              className="text-sm font-medium text-usant-red hover:underline flex items-center gap-1"
+                            >
+                              <RotateCcw size={14} /> Return
+                            </button>
+                         </div>
+                      </div>
+                    );
+                    }) : (
+                      <div className="text-center py-20">
+                         <BookIcon size={48} className="text-gray-200 mx-auto mb-4" />
+                         <h3 className="text-lg font-bold text-gray-900">Your shelf is empty</h3>
+                         <p className="text-gray-500 mb-6">Explore the library and start borrowing books!</p>
+                         <Link href="/student#browse" className="bg-usant-red text-white px-6 py-2 rounded-lg font-bold hover:bg-red-800 transition">
+                            Browse Books
+                         </Link>
+                      </div>
+                    )}
+                  </div>
                 </div>
              </div>
           </div>

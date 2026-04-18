@@ -841,20 +841,6 @@ export async function getActiveBorrowsByUserId(userId: string): Promise<BorrowRe
   return borrows.map(mapBorrowRecord);
 }
 
-export async function getBorrowHistoryByUserId(userId: string): Promise<BorrowRecord[]> {
-  const borrows = await prisma.borrowRecord.findMany({
-    where: {
-      userId,
-    },
-    orderBy: {
-      borrowedDate: 'desc',
-    },
-    include: borrowInclude,
-  });
-
-  return borrows.map(mapBorrowRecord);
-}
-
 export async function getOverdueBorrows(): Promise<BorrowRecord[]> {
   const borrows = await prisma.borrowRecord.findMany({
     where: {

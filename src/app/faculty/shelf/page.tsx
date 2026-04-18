@@ -29,7 +29,7 @@ interface ReadingList {
 export default function FacultyShelfPage() {
   const router = useRouter();
   const { user, token } = useAuth();
-  const [activeTab, setActiveTab] = useState<'current' | 'history' | 'lists'>('current');
+  const [activeTab, setActiveTab] = useState<'current' | 'lists'>('current');
   const [borrows, setBorrows] = useState<BorrowRecord[]>([]);
   const [readingLists, setReadingLists] = useState<ReadingList[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -52,7 +52,7 @@ export default function FacultyShelfPage() {
     const loadData = async () => {
       try {
         const [borrowsRes, listsRes] = await Promise.all([
-          fetch('/api/borrows?history=true', { headers: { Authorization: `Bearer ${token}` } }),
+          fetch('/api/borrows', { headers: { Authorization: `Bearer ${token}` } }),
           fetch('/api/reading-lists', { headers: { Authorization: `Bearer ${token}` } }),
         ]);
 
@@ -87,7 +87,7 @@ export default function FacultyShelfPage() {
       });
       if (!response.ok) return;
 
-      const refreshed = await fetch('/api/borrows?history=true', {
+      const refreshed = await fetch('/api/borrows', {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (refreshed.ok) {
@@ -99,8 +99,7 @@ export default function FacultyShelfPage() {
     }
   };
 
-  const currentBorrows = borrows.filter(b => b.status === 'active');
-  const historyBorrows = borrows.filter(b => b.status !== 'active');
+  const currentBorrows = borrows;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -124,7 +123,7 @@ export default function FacultyShelfPage() {
           </div>
           <h1 className="text-4xl font-bold text-white mb-2">Faculty Bookshelf</h1>
           <p className="text-white/90 text-lg">
-            Manage your borrowed materials, research resources, and course reading lists.
+            Manage your borrowed materials and course reading lists.
           </p>
         </div>
       </div>
@@ -197,16 +196,6 @@ export default function FacultyShelfPage() {
                     Current Borrows ({currentBorrows.length})
                   </button>
                   <button
-                    onClick={() => setActiveTab('history')}
-                    className={`flex-1 py-4 text-sm font-bold text-center border-b-2 transition-colors ${
-                        activeTab === 'history'
-                        ? 'border-usant-red text-usant-red bg-red-50/50'
-                        : 'border-transparent text-gray-500 hover:text-gray-700'
-                    }`}
-                  >
-                    Borrowing History
-                  </button>
-                  <button
                     onClick={() => setActiveTab('lists')}
                     className={`flex-1 py-4 text-sm font-bold text-center border-b-2 transition-colors ${
                         activeTab === 'lists'
@@ -275,26 +264,6 @@ export default function FacultyShelfPage() {
                            </Link>
                         </div>
                       )}
-                    </div>
-                  )}
-
-                  {activeTab === 'history' && (
-                    <div className="space-y-4">
-                       {historyBorrows.map((borrow) => (
-                        <div key={borrow.id} className="flex items-center gap-4 p-4 rounded-xl border border-gray-100 opacity-75 hover:opacity-100 transition">
-                           <div className={`w-12 h-16 ${borrow.color || 'bg-gray-200'} rounded-md shadow-sm flex-shrink-0`}></div>
-                           <div className="flex-1">
-                             <h3 className="font-bold text-gray-900">{borrow.title}</h3>
-                             <p className="text-xs text-gray-500">{borrow.author}</p>
-                           </div>
-                           <div className="text-right">
-                              <span className="block text-xs text-gray-400 mb-1">Returned on</span>
-                              <span className="block text-sm font-medium text-gray-700">
-                                {borrow.returnedDate ? new Date(borrow.returnedDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '---'}
-                              </span>
-                           </div>
-                        </div>
-                      ))}
                     </div>
                   )}
 

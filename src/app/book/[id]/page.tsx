@@ -70,7 +70,7 @@ export default function BookDetailsPage({ params }: { params: Promise<{ id: stri
 
         const [reviewsRes, borrowsRes, relatedRes] = await Promise.all([
           fetch(`/api/reviews?bookId=${bookId}`, { headers: { Authorization: `Bearer ${token}` } }),
-          fetch('/api/borrows?history=true', { headers: { Authorization: `Bearer ${token}` } }),
+          fetch('/api/borrows', { headers: { Authorization: `Bearer ${token}` } }),
           fetch(`/api/books?genre=${encodeURIComponent(fetchedBook.genre)}&limit=6`, { headers: { Authorization: `Bearer ${token}` } }),
         ]);
 
@@ -106,7 +106,7 @@ export default function BookDetailsPage({ params }: { params: Promise<{ id: stri
   const handleModalClose = () => {
     setIsBorrowModalOpen(false);
     if (!token) return;
-    fetch('/api/borrows?history=true', {
+    fetch('/api/borrows', {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(res => res.ok ? res.json() : null)

@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { 
   borrowBook, 
   returnBook, 
-  getActiveBorrowsByUserId, 
-  getBorrowHistoryByUserId,
+  getActiveBorrowsByUserId,
   getOverdueBorrows 
 } from '@/app/lib/db-repository';
 
@@ -26,17 +25,15 @@ function mapBorrow(record: any) {
 
 /**
  * GET /api/borrows
- * Get borrow records for the authenticated user
+ * Get active borrow records for the authenticated user
  * 
  * Query parameters:
- * - status: Filter by status (active, returned, overdue)
- * - history: Get full history (true/false)
+ * - status: Filter by status (active, overdue)
  */
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
-    const history = searchParams.get('history');
     
     // Get user ID from header (set by middleware)
     const userId = request.headers.get('x-user-id');
@@ -60,8 +57,6 @@ export async function GET(request: NextRequest) {
         );
       }
       borrows = await getOverdueBorrows();
-    } else if (history === 'true') {
-      borrows = await getBorrowHistoryByUserId(userId);
     } else {
       borrows = await getActiveBorrowsByUserId(userId);
     }
