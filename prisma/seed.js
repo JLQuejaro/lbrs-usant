@@ -19,7 +19,7 @@ async function main() {
     create: {
       id: '00000000-0000-0000-0000-000000000008',
       username: 'Admin User',
-      email: 'admin@usant.edu',
+      email: 'admin@usant.edu.ph',
       passwordHash: '$2b$10$UyPoViHOr./62um1VfbyPucyMrcWWoLDFQMSdyd0FBxKLg3Pmj6t6',
       role: 'admin',
       adminType: 'SYSTEM_ADMINISTRATOR',
@@ -34,7 +34,7 @@ async function main() {
     create: {
       id: '00000000-0000-0000-0000-000000000001',
       username: 'John Student',
-      email: 'john@usant.edu',
+      email: 'john@usant.edu.ph',
       passwordHash: '$2b$10$WNneULUb8dT3l/LCggiK2e3r6WcIBFK07rWJmf0IKSngR2K97kqhC',
       role: 'student',
       studentType: 'UNDERGRADUATE_STUDENT',
@@ -51,7 +51,7 @@ async function main() {
     create: {
       id: '00000000-0000-0000-0000-000000000006',
       username: 'Dr. Robert Johnson',
-      email: 'rob@usant.edu',
+      email: 'rob@usant.edu.ph',
       passwordHash: '$2b$10$N6dpAt/3KpgtM8Fbm4MBvuzAVF8xa70RW7Yzs0IkyY5akBYtGeyIK',
       role: 'faculty',
       facultyType: 'PROFESSOR',
@@ -67,7 +67,7 @@ async function main() {
     create: {
       id: '00000000-0000-0000-0000-000000000007',
       username: 'Maria Santos',
-      email: 'maria@usant.edu',
+      email: 'maria@usant.edu.ph',
       passwordHash: '$2b$10$FeIUVez5/DJPThsypuWIweRvk8ketZDyxO/ni2J6xDq.FvNOrkHXS',
       role: 'staff',
       staffType: 'LIBRARIAN',
@@ -80,7 +80,7 @@ async function main() {
     {
       id: '550e8400-e29b-41d4-a716-446655440001',
       fullName: 'Emily Wilson',
-      email: 'emily.wilson@usant.edu',
+      email: 'emily.wilson@usant.edu.ph',
       requestedRole: 'student',
       userType: 'Undergraduate Student',
       course: 'Computer Science',
@@ -91,7 +91,7 @@ async function main() {
     {
       id: '550e8400-e29b-41d4-a716-446655440002',
       fullName: 'Dr. Michael Chen',
-      email: 'michael.chen@usant.edu',
+      email: 'michael.chen@usant.edu.ph',
       requestedRole: 'faculty',
       userType: 'Professor',
       status: 'pending',
@@ -101,7 +101,7 @@ async function main() {
     {
       id: '550e8400-e29b-41d4-a716-446655440003',
       fullName: 'Sarah Martinez',
-      email: 'sarah.martinez@usant.edu',
+      email: 'sarah.martinez@usant.edu.ph',
       requestedRole: 'student',
       userType: 'Graduate Student (PhD)',
       course: 'Engineering',
@@ -112,7 +112,7 @@ async function main() {
     {
       id: '550e8400-e29b-41d4-a716-446655440004',
       fullName: 'Prof. James Anderson',
-      email: 'james.anderson@usant.edu',
+      email: 'james.anderson@usant.edu.ph',
       requestedRole: 'faculty',
       userType: 'Lecturer',
       department: 'Engineering',
@@ -566,20 +566,6 @@ async function main() {
       create: review,
     });
   }
-
-  await prisma.wishlistItem.upsert({
-    where: {
-      userId_bookId: {
-        userId: '00000000-0000-0000-0000-000000000001',
-        bookId: 2,
-      },
-    },
-    update: {},
-    create: {
-      userId: '00000000-0000-0000-0000-000000000001',
-      bookId: 2,
-    },
-  });
 
   console.log('Prisma seed completed successfully.');
 }
