@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { ArrowRight, UserPlus, Loader2, BookOpen, GraduationCap, Users, Award, Check, X, AlertCircle, Shield } from 'lucide-react';
+import { useState } from 'react';
+import { ArrowRight, UserPlus, Loader2, Check, X, AlertCircle, Shield } from 'lucide-react';
 import Image from 'next/image';
 import { userTypesByRole, UserRole, UserType } from './lib/userTypes';
 import { useRouter } from 'next/navigation';
 import { useAuth } from './contexts/AuthContext';
 import { validatePassword, getStrengthColor, getStrengthLabel, getStrengthProgress } from './lib/passwordValidation';
 import LibraryInfoModal from './components/LibraryInfoModal';
+import LibraryInfoPanel from './components/LibraryInfoPanel';
 
 export default function AuthPage() {
   const router = useRouter();
@@ -30,17 +31,9 @@ export default function AuthPage() {
   const [course, setCourse] = useState('Computer Science');
   const [yearLevel, setYearLevel] = useState('1st Year');
 
-  // Modal states
+  // Modal states (kept for mobile view)
   const [showRulesModal, setShowRulesModal] = useState(false);
   const [showHoursModal, setShowHoursModal] = useState(false);
-
-  // Auto-show rules modal on first visit
-  useEffect(() => {
-    const hasSeenRules = localStorage.getItem('library-rules-acknowledged');
-    if (!hasSeenRules) {
-      setShowRulesModal(true);
-    }
-  }, []);
 
   const handleRoleChange = (newRole: UserRole) => {
     setRole(newRole);
@@ -218,7 +211,7 @@ export default function AuthPage() {
   return (
     <div className="flex min-h-screen w-full bg-gradient-to-br from-slate-50 via-white to-slate-100">
 
-      {/* LEFT SIDE: Picture Catalog & Branding */}
+      {/* LEFT SIDE: Picture Catalog, Branding & Info Panel */}
       <div className="hidden lg:flex w-1/2 flex-col relative overflow-hidden">
         {/* Background Image with Overlay */}
         <div className="absolute inset-0">
@@ -250,36 +243,17 @@ export default function AuthPage() {
             </div>
 
             <div className="space-y-4 max-w-lg mb-8">
-              <h2 className="text-4xl font-bold text-white leading-tight drop-shadow-md">
+              <h2 className="text-3xl font-bold text-white leading-tight drop-shadow-md">
                 Your Gateway to Academic Excellence
               </h2>
-              <p className="text-lg text-white/95 leading-relaxed drop-shadow">
-                Access thousands of resources, get personalized book recommendations, and enhance your learning journey with our intelligent library system.
+              <p className="text-base text-white/95 leading-relaxed drop-shadow">
+                Access thousands of resources, get personalized book recommendations, and enhance your learning journey.
               </p>
             </div>
 
-            {/* Library Info Buttons */}
-            <div className="flex flex-row gap-4 max-w-lg">
-              <button
-                type="button"
-                onClick={() => setShowRulesModal(true)}
-                className="flex-1 text-center px-6 py-4 bg-white/20 hover:bg-white/30 backdrop-blur-md border-2 border-white/50 rounded-xl text-white font-bold text-sm transition-all focus:outline-none focus:ring-4 focus:ring-white/50 shadow-2xl hover:shadow-white/30 animate-pulse hover:animate-none hover:scale-105 active:scale-95"
-                style={{
-                  boxShadow: '0 0 30px rgba(255, 255, 255, 0.5), 0 0 60px rgba(255, 255, 255, 0.3), 0 10px 30px rgba(0, 0, 0, 0.3)'
-                }}
-              >
-                Library Rules & Regulations
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowHoursModal(true)}
-                className="flex-1 text-center px-6 py-4 bg-white/20 hover:bg-white/30 backdrop-blur-md border-2 border-white/50 rounded-xl text-white font-bold text-sm transition-all focus:outline-none focus:ring-4 focus:ring-white/50 shadow-2xl hover:shadow-white/30 animate-pulse hover:animate-none hover:scale-105 active:scale-95"
-                style={{
-                  boxShadow: '0 0 30px rgba(255, 255, 255, 0.5), 0 0 60px rgba(255, 255, 255, 0.3), 0 10px 30px rgba(0, 0, 0, 0.3)'
-                }}
-              >
-                Library Hours/Schedule
-              </button>
+            {/* Library Info Panel - Below Branding */}
+            <div className="max-w-lg">
+              <LibraryInfoPanel />
             </div>
           </div>
 
@@ -288,15 +262,34 @@ export default function AuthPage() {
       </div>
 
       {/* RIGHT SIDE: Auth Form */}
-      <div className="flex-1 flex items-center justify-center p-6 lg:p-12 overflow-y-auto">
+      <div className="flex-1 flex items-center justify-center p-6 lg:p-8 overflow-y-auto">
         <div className="w-full max-w-md">
           
-          {/* Mobile Logo */}
-          <div className="lg:hidden flex items-center justify-center gap-3 mb-8">
-            <Image src="/logo.png" alt="USANT Logo" width={50} height={50} className="object-contain" />
-            <div>
-              <h1 className="text-2xl font-bold text-usant-red">USANT LBRS</h1>
-              <p className="text-xs text-gray-600">Library System</p>
+          {/* Mobile Logo & Info Buttons */}
+          <div className="lg:hidden mb-8">
+            <div className="flex items-center justify-center gap-3 mb-4">
+              <Image src="/logo.png" alt="USANT Logo" width={50} height={50} className="object-contain" />
+              <div>
+                <h1 className="text-2xl font-bold text-usant-red">USANT LBRS</h1>
+                <p className="text-xs text-gray-600">Library System</p>
+              </div>
+            </div>
+            {/* Mobile Info Buttons */}
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setShowRulesModal(true)}
+                className="flex-1 px-4 py-2 bg-usant-red/10 hover:bg-usant-red/20 border border-usant-red rounded-lg text-usant-red font-semibold text-xs transition-all"
+              >
+                Rules & Regulations
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowHoursModal(true)}
+                className="flex-1 px-4 py-2 bg-usant-orange/10 hover:bg-usant-orange/20 border border-usant-orange rounded-lg text-usant-orange font-semibold text-xs transition-all"
+              >
+                Library Hours
+              </button>
             </div>
           </div>
 
