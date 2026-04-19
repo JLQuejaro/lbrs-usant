@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ArrowRight, UserPlus, Loader2, BookOpen, GraduationCap, Users, Award, Check, X, AlertCircle, Shield } from 'lucide-react';
 import Image from 'next/image';
 import { userTypesByRole, UserRole, UserType } from './lib/userTypes';
 import { useRouter } from 'next/navigation';
 import { useAuth } from './contexts/AuthContext';
 import { validatePassword, getStrengthColor, getStrengthLabel, getStrengthProgress } from './lib/passwordValidation';
+import LibraryInfoModal from './components/LibraryInfoModal';
 
 export default function AuthPage() {
   const router = useRouter();
@@ -28,6 +29,18 @@ export default function AuthPage() {
   const [fullName, setFullName] = useState('');
   const [course, setCourse] = useState('Computer Science');
   const [yearLevel, setYearLevel] = useState('1st Year');
+
+  // Modal states
+  const [showRulesModal, setShowRulesModal] = useState(false);
+  const [showHoursModal, setShowHoursModal] = useState(false);
+
+  // Auto-show rules modal on first visit
+  useEffect(() => {
+    const hasSeenRules = localStorage.getItem('library-rules-acknowledged');
+    if (!hasSeenRules) {
+      setShowRulesModal(true);
+    }
+  }, []);
 
   const handleRoleChange = (newRole: UserRole) => {
     setRole(newRole);
@@ -222,7 +235,7 @@ export default function AuthPage() {
         </div>
 
         {/* Content Overlay */}
-        <div className="relative z-10 flex flex-col justify-between h-full p-12">
+        <div className="relative z-10 flex flex-col justify-start h-full p-12">
           
           {/* Top: Logo & Branding */}
           <div className="animate-in fade-in slide-in-from-left duration-700">
@@ -236,13 +249,37 @@ export default function AuthPage() {
               </div>
             </div>
 
-            <div className="space-y-4 max-w-lg">
+            <div className="space-y-4 max-w-lg mb-8">
               <h2 className="text-4xl font-bold text-white leading-tight drop-shadow-md">
                 Your Gateway to Academic Excellence
               </h2>
               <p className="text-lg text-white/95 leading-relaxed drop-shadow">
                 Access thousands of resources, get personalized book recommendations, and enhance your learning journey with our intelligent library system.
               </p>
+            </div>
+
+            {/* Library Info Buttons */}
+            <div className="flex flex-row gap-4 max-w-lg">
+              <button
+                type="button"
+                onClick={() => setShowRulesModal(true)}
+                className="flex-1 text-center px-6 py-4 bg-white/20 hover:bg-white/30 backdrop-blur-md border-2 border-white/50 rounded-xl text-white font-bold text-sm transition-all focus:outline-none focus:ring-4 focus:ring-white/50 shadow-2xl hover:shadow-white/30 animate-pulse hover:animate-none hover:scale-105 active:scale-95"
+                style={{
+                  boxShadow: '0 0 30px rgba(255, 255, 255, 0.5), 0 0 60px rgba(255, 255, 255, 0.3), 0 10px 30px rgba(0, 0, 0, 0.3)'
+                }}
+              >
+                Library Rules & Regulations
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowHoursModal(true)}
+                className="flex-1 text-center px-6 py-4 bg-white/20 hover:bg-white/30 backdrop-blur-md border-2 border-white/50 rounded-xl text-white font-bold text-sm transition-all focus:outline-none focus:ring-4 focus:ring-white/50 shadow-2xl hover:shadow-white/30 animate-pulse hover:animate-none hover:scale-105 active:scale-95"
+                style={{
+                  boxShadow: '0 0 30px rgba(255, 255, 255, 0.5), 0 0 60px rgba(255, 255, 255, 0.3), 0 10px 30px rgba(0, 0, 0, 0.3)'
+                }}
+              >
+                Library Hours/Schedule
+              </button>
             </div>
           </div>
 
@@ -577,6 +614,18 @@ export default function AuthPage() {
           </p>
         </div>
       </div>
+
+      {/* Library Info Modals */}
+      <LibraryInfoModal 
+        isOpen={showRulesModal} 
+        onClose={() => setShowRulesModal(false)} 
+        type="rules" 
+      />
+      <LibraryInfoModal 
+        isOpen={showHoursModal} 
+        onClose={() => setShowHoursModal(false)} 
+        type="hours" 
+      />
     </div>
   );
 }
