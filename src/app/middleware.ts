@@ -5,6 +5,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { verifyToken } from '@/app/lib/auth';
+import { loginRateLimiter } from '@/app/lib/rate-limiter';
 
 // Routes that don't require authentication
 const PUBLIC_ROUTES = [
@@ -26,8 +27,24 @@ const STAFF_ALLOWED_ROUTES = [
   '/api/users',
 ];
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  
+  // Rate limiting for login endpoint
+  if (pathname === '/api/auth/login') {
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || 
+               request.headers.get('x-real-ip') || 
+               'unknown';
+    
+    try {
+      await loginRateLimiter.consume(ip);
+    } catch (error) {
+      return NextResponse.json(
+        { error: 'Too Many Requests', message: 'Too many login attempts. Please try again later.' },
+        { status: 429 }
+      );
+    }
+  }
   
   // Skip middleware for public routes
   if (PUBLIC_ROUTES.some(route => pathname.startsWith(route))) {
