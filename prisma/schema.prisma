@@ -17,7 +17,7 @@ enum UserRole {
 
 enum StudentUserType {
   UNDERGRADUATE_STUDENT @map("Undergraduate Student")
-  GRADUATE_STUDENT_MASTERS @map("Graduate Student (Master's)")
+  GRADUATE_STUDENT_MASTERS @map("Graduate Student (Masters)")
   GRADUATE_STUDENT_PHD @map("Graduate Student (PhD)")
   DISTANCE_ONLINE_LEARNER @map("Distance/Online Learner")
 
@@ -60,6 +60,13 @@ enum NotificationType {
   system
 
   @@map("notification_type")
+}
+
+enum FineStatus {
+  unpaid
+  paid
+
+  @@map("fine_status")
 }
 
 enum JournalEntryType {
@@ -225,6 +232,7 @@ model BorrowRecord {
   createdAt    DateTime  @default(now()) @map("created_at")
   user         User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   book         Book      @relation(fields: [bookId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  fines        Fine[]
 
   @@index([userId], map: "idx_borrow_records_user_id")
   @@index([bookId], map: "idx_borrow_records_book_id")
@@ -232,6 +240,21 @@ model BorrowRecord {
   @@index([dueDate], map: "idx_borrow_records_due_date")
   @@index([borrowedDate], map: "idx_borrow_records_borrowed_date")
   @@map("borrow_records")
+}
+
+model Fine {
+  id         Int        @id @default(autoincrement()) @map("fine_id")
+  borrowId   Int        @map("borrow_id")
+  amount     Decimal    @db.Decimal(10, 2)
+  ratePerDay Decimal    @map("rate_per_day") @db.Decimal(10, 2)
+  paidAt     DateTime?  @map("paid_at")
+  status     FineStatus @default(unpaid)
+  createdAt  DateTime   @default(now()) @map("created_at")
+  borrow     BorrowRecord @relation(fields: [borrowId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([borrowId], map: "idx_fines_borrow_id")
+  @@index([status], map: "idx_fines_status")
+  @@map("fines")
 }
 
 model Notification {

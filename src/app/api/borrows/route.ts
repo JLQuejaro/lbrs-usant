@@ -132,6 +132,13 @@ export async function POST(request: NextRequest) {
       );
     }
     
+    if (error.message?.includes('unpaid fines')) {
+      return NextResponse.json(
+        { error: 'Forbidden', message: 'Cannot borrow: user has unpaid fines' },
+        { status: 403 }
+      );
+    }
+    
     return NextResponse.json(
       { error: 'Internal Server Error', message: 'Failed to borrow book' },
       { status: 500 }

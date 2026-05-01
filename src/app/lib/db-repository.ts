@@ -140,9 +140,19 @@ export interface Notification {
   created_at: Date;
 }
 
+export interface Fine {
+  fine_id: number;
+  borrow_id: number;
+  amount: number;
+  rate_per_day: number;
+  paid_at?: Date | null;
+  status: 'unpaid' | 'paid';
+  created_at: Date;
+}
+
 const studentTypeLabels: Record<StudentUserType, string> = {
   UNDERGRADUATE_STUDENT: 'Undergraduate Student',
-  GRADUATE_STUDENT_MASTERS: "Graduate Student (Master's)",
+  GRADUATE_STUDENT_MASTERS: "Graduate Student (Masters)",
   GRADUATE_STUDENT_PHD: 'Graduate Student (PhD)',
   DISTANCE_ONLINE_LEARNER: 'Distance/Online Learner',
 };
@@ -667,6 +677,11 @@ export async function borrowBook(
   bookId: number,
   dueDate: Date
 ): Promise<BorrowRecord> {
+  const hasUnpaid = await hasUnpaidFines(userId);
+  if (hasUnpaid) {
+    throw new Error('Cannot borrow: user has unpaid fines');
+  }
+
   const borrow = await prisma.$transaction(async (tx) => {
     const book = await tx.book.findUnique({
       where: { id: bookId },
@@ -991,6 +1006,126 @@ export async function getNotificationsByUserId(
   });
 
   return notifications.map(mapNotificationRecord);
+}
+
+// ============================================================
+// FINES
+// ============================================================
+
+export function calculateFine(borrowRecord: BorrowRecord, bookType: 'circulation' | 'reserve' = 'circulation'): number {
+  if (borrowRecord.returned_date) {
+    const returnDate = new Date(borrowRecord.returned_date);
+    const dueDate = new Date(borrowRecord.due_date);
+    
+    if (returnDate <= dueDate) {
+      return 0;
+    }
+    
+    const diffMs = returnDate.getTime() - dueDate.getTime();
+    
+    if (bookType === 'reserve') {
+      const hours = Math.ceil(diffMs / (1000 * 60 * 60));
+      return hours * 1;
+    } else {
+      const days = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+      return days * 9;
+    }
+  }
+  
+  const now = new Date();
+  const dueDate = new Date(borrowRecord.due_date);
+  
+  if (now <= dueDate) {
+    return 0;
+  }
+  
+  const diffMs = now.getTime() - dueDate.getTime();
+  
+  if (bookType === 'reserve') {
+    const hours = Math.ceil(diffMs / (1000 * 60 * 60));
+    return hours * 1;
+  } else {
+    const days = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+    return days * 9;
+  }
+}
+
+export async function createFine(borrowId: number, amount: number, ratePerDay: number): Promise<Fine> {
+  const fine = await prisma.fine.create({
+    data: {
+      borrowId,
+      amount,
+      ratePerDay,
+      status: 'unpaid',
+    },
+  });
+
+  return {
+    fine_id: fine.id,
+    borrow_id: fine.borrowId,
+    amount: Number(fine.amount),
+    rate_per_day: Number(fine.ratePerDay),
+    paid_at: fine.paidAt,
+    status: fine.status,
+    created_at: fine.createdAt,
+  };
+}
+
+export async function markFineAsPaid(fineId: number): Promise<Fine | null> {
+  const fine = await prisma.fine.update({
+    where: { id: fineId },
+    data: {
+      status: 'paid',
+      paidAt: new Date(),
+    },
+  });
+
+  return fine ? {
+    fine_id: fine.id,
+    borrow_id: fine.borrowId,
+    amount: Number(fine.amount),
+    rate_per_day: Number(fine.ratePerDay),
+    paid_at: fine.paidAt,
+    status: fine.status,
+    created_at: fine.createdAt,
+  } : null;
+}
+
+export async function getUnpaidFinesByUserId(userId: string): Promise<Fine[]> {
+  const fines = await prisma.fine.findMany({
+    where: {
+      borrow: {
+        userId,
+      },
+      status: 'unpaid',
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
+  });
+
+  return fines.map(fine => ({
+    fine_id: fine.id,
+    borrow_id: fine.borrowId,
+    amount: Number(fine.amount),
+    rate_per_day: Number(fine.ratePerDay),
+    paid_at: fine.paidAt,
+    status: fine.status,
+    created_at: fine.createdAt,
+  }));
+}
+
+export async function hasUnpaidFines(userId: string): Promise<boolean> {
+  const count = await prisma.fine.count({
+    where: {
+      borrow: {
+        userId,
+      },
+      status: 'unpaid',
+    },
+  });
+
+  return count > 0;
 }
 
 
