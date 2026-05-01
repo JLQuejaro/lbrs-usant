@@ -3,7 +3,8 @@ import {
   borrowBook, 
   returnBook, 
   getActiveBorrowsByUserId,
-  getOverdueBorrows 
+  getOverdueBorrows,
+  getBorrowById
 } from '@/app/lib/db-repository';
 
 function mapBorrow(record: any) {
@@ -154,18 +155,42 @@ export async function PUT(request: NextRequest) {
       );
     }
     
-    // Execute return
-    const borrow = await returnBook(parseInt(borrowId, 10));
+    const userId = request.headers.get('x-user-id');
+    const userRole = request.headers.get('x-user-role');
     
-    if (!borrow) {
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'No user ID in request' },
+        { status: 401 }
+      );
+    }
+    
+    // Fetch borrow record to check ownership
+    const existingBorrow = await getBorrowById(parseInt(borrowId, 10));
+    
+    if (!existingBorrow) {
       return NextResponse.json(
         { error: 'Not Found', message: 'Borrow record not found' },
         { status: 404 }
       );
     }
     
+    // Authorization: only borrower or staff/admin can return
+    const isBorrower = existingBorrow.user_id === userId;
+    const isStaff = userRole === 'staff' || userRole === 'admin';
+    
+    if (!isBorrower && !isStaff) {
+      return NextResponse.json(
+        { error: 'Forbidden', message: 'Only the borrower or librarian can return this book' },
+        { status: 403 }
+      );
+    }
+    
+    // Execute return
+    const borrow = await returnBook(parseInt(borrowId, 10));
+    
     return NextResponse.json(
-      { message: 'Book returned successfully', borrow: mapBorrow(borrow) },
+      { message: 'Book returned successfully', borrow: mapBorrow(borrow!) },
       { status: 200 }
     );
     

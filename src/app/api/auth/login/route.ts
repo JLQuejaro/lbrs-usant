@@ -58,15 +58,8 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Verify password
-      let isValidPassword = false;
-
-      if (user.password_hash && user.password_hash.startsWith('$2')) {
-        isValidPassword = await verifyPassword(password, user.password_hash);
-      } else if (user.password_hash) {
-        // Fallback for legacy plaintext passwords
-        isValidPassword = password === user.password_hash;
-      }
+      // Verify password (bcrypt only)
+      const isValidPassword = await verifyPassword(password, user.password_hash);
 
       if (!isValidPassword) {
         return NextResponse.json(

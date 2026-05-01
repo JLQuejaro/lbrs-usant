@@ -30,14 +30,14 @@ async function main() {
   console.log('Connection successful.');
   console.log(`Database time: ${healthcheck[0].now}\n`);
 
-  const [users, books, borrows, notifications, reviews, wishlistItems, accountRequests] = await Promise.all([
+  const [users, books, borrows, notifications, accountRequests, journals, readingLists] = await Promise.all([
     prisma.user.count(),
     prisma.book.count(),
     prisma.borrowRecord.count(),
     prisma.notification.count(),
-    prisma.review.count(),
-    prisma.wishlistItem.count(),
     prisma.accountRequest.count(),
+    prisma.journal.count(),
+    prisma.readingList.count(),
   ]);
 
   console.log('Model counts:');
@@ -45,9 +45,9 @@ async function main() {
   console.log(`  books: ${books}`);
   console.log(`  borrow_records: ${borrows}`);
   console.log(`  notifications: ${notifications}`);
-  console.log(`  reviews: ${reviews}`);
-  console.log(`  wishlist_items: ${wishlistItems}`);
   console.log(`  account_requests: ${accountRequests}`);
+  console.log(`  journals: ${journals}`);
+  console.log(`  reading_lists: ${readingLists}`);
   console.log('');
   console.log('Runtime database objects:');
   console.log(`  active_borrows_view rows: ${activeBorrowsView.count}`);

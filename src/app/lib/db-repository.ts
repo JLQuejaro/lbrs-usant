@@ -786,6 +786,17 @@ export async function getOverdueBorrows(): Promise<BorrowRecord[]> {
   return borrows.map(mapBorrowRecord);
 }
 
+export async function getBorrowById(borrowId: number): Promise<BorrowRecord | null> {
+  const borrow = await prisma.borrowRecord.findUnique({
+    where: {
+      id: borrowId,
+    },
+    include: borrowInclude,
+  });
+
+  return borrow ? mapBorrowRecord(borrow) : null;
+}
+
 // ============================================================
 // ACCOUNT REQUEST REPOSITORY
 // ============================================================

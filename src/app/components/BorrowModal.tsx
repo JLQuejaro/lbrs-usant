@@ -13,11 +13,19 @@ interface BorrowModalProps {
 }
 
 export default function BorrowModal({ isOpen, onClose, bookTitle, bookId }: BorrowModalProps) {
+  const { token, user } = useAuth();
   const [step, setStep] = useState<'confirm' | 'success'>('confirm');
   const [isBorrowing, setIsBorrowing] = useState(false);
   const [error, setError] = useState('');
   const [dueDate, setDueDate] = useState<Date | null>(null);
-  const { token, user } = useAuth();
+
+  const fallbackDueDate = useMemo(() => {
+    const today = new Date();
+    const calculated = new Date(today);
+    const defaultDays = user?.role === 'faculty' ? 30 : 7;
+    calculated.setDate(today.getDate() + defaultDays);
+    return calculated;
+  }, [user?.role]);
 
   if (!isOpen) return null;
 
@@ -62,14 +70,6 @@ export default function BorrowModal({ isOpen, onClose, bookTitle, bookId }: Borr
     setDueDate(null);
     onClose();
   };
-
-  const fallbackDueDate = useMemo(() => {
-    const today = new Date();
-    const calculated = new Date(today);
-    const defaultDays = user?.role === 'faculty' ? 30 : 7;
-    calculated.setDate(today.getDate() + defaultDays);
-    return calculated;
-  }, [user?.role]);
 
   const effectiveDueDate = dueDate || fallbackDueDate;
   const formattedDate = effectiveDueDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
