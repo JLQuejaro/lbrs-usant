@@ -3,6 +3,7 @@
 
 import Navbar from '@/app/components/Navbar';
 import AddBookModal, { type CreateBookFormInput } from '@/app/components/AddBookModal';
+import EditBookModal, { type EditBookFormInput } from '@/app/components/EditBookModal';
 import { 
   Book as BookIcon, Layers, Plus, Search, Edit, Trash2, CheckCircle,
   TrendingUp, FileText, ShoppingBag, Star, AlertCircle, BarChart3, Clock, ArrowRight 
@@ -11,7 +12,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/app/contexts/AuthContext';
 
 interface Book {
-  id: number;
+  id: string;
   title: string;
   author: string;
   genre: string;
@@ -27,6 +28,8 @@ interface Book {
   views: number;
   featured?: boolean;
   location?: string;
+  stockQuantity?: number;
+  availableCopies?: number;
 }
 
 interface User {
@@ -42,6 +45,8 @@ export default function LibrarianDashboard() {
   const [activeTab, setActiveTab] = useState<'Inventory' | 'Borrowing' | 'Reports' | 'Users' | 'Acquisition'>('Inventory');
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const [books, setBooks] = useState<Book[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [inventoryError, setInventoryError] = useState<string | null>(null);
@@ -111,7 +116,36 @@ export default function LibrarianDashboard() {
     setBooks((currentBooks) => [data.book, ...currentBooks]);
   };
 
-  const toggleFeatured = async (id: number, featured: boolean) => {
+  const handleEditBook = async (bookId: string, updatedBook: EditBookFormInput) => {
+    if (!token) {
+      throw new Error('You must be signed in to edit books.');
+    }
+
+    setInventoryError(null);
+
+    const response = await fetch(`/api/books?id=${bookId}`, {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(updatedBook),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      const message = typeof data?.message === 'string' ? data.message : 'Failed to update book';
+      setInventoryError(message);
+      throw new Error(message);
+    }
+
+    setBooks((currentBooks) =>
+      currentBooks.map((book) => (book.id === bookId ? data.book : book))
+    );
+  };
+
+  const toggleFeatured = async (id: string, featured: boolean) => {
     if (!token) {
       return;
     }
@@ -166,6 +200,16 @@ export default function LibrarianDashboard() {
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
         onSave={handleAddBook} 
+      />
+
+      <EditBookModal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setSelectedBook(null);
+        }}
+        onSave={handleEditBook}
+        book={selectedBook}
       />
 
       <main className="max-w-7xl mx-auto px-8 py-10">
@@ -281,7 +325,15 @@ export default function LibrarianDashboard() {
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-2">
-                          <button className="text-gray-400 hover:text-blue-600 p-2 rounded-lg hover:bg-blue-50 transition"><Edit size={16} /></button>
+                          <button 
+                            onClick={() => {
+                              setSelectedBook(book);
+                              setIsEditModalOpen(true);
+                            }}
+                            className="text-gray-400 hover:text-blue-600 p-2 rounded-lg hover:bg-blue-50 transition"
+                          >
+                            <Edit size={16} />
+                          </button>
                           <button className="text-gray-400 hover:text-red-600 p-2 rounded-lg hover:bg-red-50 transition"><Trash2 size={16} /></button>
                         </div>
                       </td>

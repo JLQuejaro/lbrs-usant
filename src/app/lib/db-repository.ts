@@ -648,6 +648,65 @@ export async function updateBookFeatured(bookId: string, featured: boolean): Pro
   return mappedBook;
 }
 
+export interface UpdateBookInput {
+  title?: string;
+  author?: string;
+  genre?: string;
+  description?: string | null;
+  pages?: number | null;
+  totalCopies?: number;
+  availableCopies?: number;
+  courses?: string[];
+}
+
+export async function updateBook(bookId: string, updateData: UpdateBookInput): Promise<Book> {
+  const existingBook = await prisma.book.findUnique({
+    where: { id: bookId },
+    select: { stockQuantity: true, availableCopies: true },
+  });
+
+  if (!existingBook) {
+    throw new Error('Book not found');
+  }
+
+  const stockQuantity = updateData.totalCopies !== undefined
+    ? Math.max(1, normalizeNonNegativeInteger(updateData.totalCopies, existingBook.stockQuantity))
+    : existingBook.stockQuantity;
+
+  const availableCopies = updateData.availableCopies !== undefined
+    ? Math.max(0, Math.min(stockQuantity, normalizeNonNegativeInteger(updateData.availableCopies, existingBook.availableCopies)))
+    : existingBook.availableCopies;
+
+  const courses = updateData.courses !== undefined ? normalizeCourses(updateData.courses) : undefined;
+
+  const book = await prisma.book.update({
+    where: { id: bookId },
+    data: {
+      ...(updateData.title && { title: updateData.title.trim() }),
+      ...(updateData.author && { author: updateData.author.trim() }),
+      ...(updateData.genre && { genre: updateData.genre.trim() }),
+      ...(updateData.description !== undefined && { description: updateData.description }),
+      ...(updateData.pages !== undefined && { pages: updateData.pages }),
+      ...(updateData.totalCopies !== undefined && { stockQuantity }),
+      ...(updateData.availableCopies !== undefined && { availableCopies }),
+      status: availableCopies > 0 ? 'Available' : 'Borrowed',
+      ...(courses !== undefined && {
+        courses: {
+          deleteMany: {},
+          create: courses.map((courseName) => ({ courseName })),
+        },
+      }),
+    },
+    include: bookInclude,
+  });
+
+  const [mappedBook] = await mapBooks([book]);
+  if (!mappedBook) {
+    throw new Error('Failed to map updated book.');
+  }
+  return mappedBook;
+}
+
 export async function deleteBook(bookId: string): Promise<boolean> {
   try {
     await prisma.book.delete({

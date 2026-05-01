@@ -10,6 +10,7 @@ import {
   getFeaturedBooks,
   getNewAcquisitions,
   searchBooks,
+  updateBook,
   updateBookFeatured,
 } from '@/app/lib/db-repository';
 
@@ -200,7 +201,7 @@ export async function POST(request: NextRequest) {
 
 /**
  * PATCH /api/books
- * Update book metadata (currently used for featured status)
+ * Update book metadata (featured status or full book details)
  */
 export async function PATCH(request: NextRequest) {
   try {
@@ -221,14 +222,56 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    if (typeof body?.featured !== 'boolean') {
+    // If only featured is provided, use the simple update
+    if (typeof body?.featured === 'boolean' && Object.keys(body).length <= 2) {
+      const book = await updateBookFeatured(bookId, body.featured);
       return NextResponse.json(
-        { error: 'Bad Request', message: 'featured must be a boolean value' },
-        { status: 400 }
+        {
+          message: 'Book updated successfully',
+          book: mapBookToUi(book),
+        },
+        { status: 200 }
       );
     }
 
-    const book = await updateBookFeatured(bookId, body.featured);
+    // Otherwise, perform full update
+    const updateData: {
+      title?: string;
+      author?: string;
+      genre?: string;
+      description?: string | null;
+      pages?: number | null;
+      totalCopies?: number;
+      availableCopies?: number;
+      courses?: string[];
+    } = {};
+
+    if (typeof body?.title === 'string' && body.title.trim()) {
+      updateData.title = body.title;
+    }
+    if (typeof body?.author === 'string' && body.author.trim()) {
+      updateData.author = body.author;
+    }
+    if (typeof body?.genre === 'string' && body.genre.trim()) {
+      updateData.genre = body.genre;
+    }
+    if (body?.description !== undefined) {
+      updateData.description = typeof body.description === 'string' ? body.description.trim() : null;
+    }
+    if (body?.pages !== undefined) {
+      updateData.pages = Number.isInteger(Number(body.pages)) ? Number(body.pages) : null;
+    }
+    if (body?.totalCopies !== undefined) {
+      updateData.totalCopies = Number(body.totalCopies);
+    }
+    if (body?.availableCopies !== undefined) {
+      updateData.availableCopies = Number(body.availableCopies);
+    }
+    if (Array.isArray(body?.courses)) {
+      updateData.courses = body.courses.map((course: unknown) => String(course));
+    }
+
+    const book = await updateBook(bookId, updateData);
 
     return NextResponse.json(
       {

@@ -25,12 +25,12 @@ async function main() {
   const staffPassword = await bcrypt.hash('staff123', 10);
 
   // Seed Admin User
-  const admin = await prisma.user.findUnique({ where: { email: 'admin@usant.edu' } });
+  const admin = await prisma.user.findUnique({ where: { email: 'admin@usant.edu.ph' } });
   if (!admin) {
     await prisma.user.create({
       data: {
         username: 'Admin User',
-        email: 'admin@usant.edu',
+        email: 'admin@usant.edu.ph',
         passwordHash: adminPassword,
         role: 'admin',
         adminType: 'SYSTEM_ADMINISTRATOR',
@@ -41,12 +41,12 @@ async function main() {
   }
 
   // Seed Student
-  const student = await prisma.user.findUnique({ where: { email: 'john@usant.edu' } });
+  const student = await prisma.user.findUnique({ where: { email: 'john@usant.edu.ph' } });
   if (!student) {
     await prisma.user.create({
       data: {
         username: 'John Student',
-        email: 'john@usant.edu',
+        email: 'john@usant.edu.ph',
         passwordHash: studentPassword,
         role: 'student',
         studentType: 'UNDERGRADUATE_STUDENT',
@@ -59,12 +59,12 @@ async function main() {
   }
 
   // Seed Faculty
-  const faculty = await prisma.user.findUnique({ where: { email: 'rob@usant.edu' } });
+  const faculty = await prisma.user.findUnique({ where: { email: 'rob@usant.edu.ph' } });
   if (!faculty) {
     await prisma.user.create({
       data: {
         username: 'Dr. Robert Johnson',
-        email: 'rob@usant.edu',
+        email: 'rob@usant.edu.ph',
         passwordHash: facultyPassword,
         role: 'faculty',
         facultyType: 'PROFESSOR',
@@ -76,12 +76,12 @@ async function main() {
   }
 
   // Seed Staff (Librarian)
-  const staff = await prisma.user.findUnique({ where: { email: 'maria@usant.edu' } });
+  const staff = await prisma.user.findUnique({ where: { email: 'maria@usant.edu.ph' } });
   if (!staff) {
     await prisma.user.create({
       data: {
         username: 'Maria Santos',
-        email: 'maria@usant.edu',
+        email: 'maria@usant.edu.ph',
         passwordHash: staffPassword,
         role: 'staff',
         staffType: 'LIBRARIAN',

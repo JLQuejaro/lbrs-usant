@@ -5,7 +5,7 @@ CREATE SCHEMA IF NOT EXISTS "public";
 CREATE TYPE "user_role" AS ENUM ('student', 'faculty', 'staff', 'admin');
 
 -- CreateEnum
-CREATE TYPE "user_type_student" AS ENUM ('Undergraduate Student', 'Graduate Student (Master's)', 'Graduate Student (PhD)', 'Distance/Online Learner');
+CREATE TYPE "user_type_student" AS ENUM ('Undergraduate Student', 'Graduate Student (Masters)', 'Graduate Student (PhD)', 'Distance/Online Learner');
 
 -- CreateEnum
 CREATE TYPE "user_type_faculty" AS ENUM ('Professor', 'Lecturer', 'Researcher');
