@@ -25,12 +25,10 @@ async function main() {
   console.log('Testing Prisma database connection...\n');
 
   const healthcheck = await prisma.$queryRaw`SELECT NOW() AS now`;
-  const [activeBorrowsView] = await prisma.$queryRaw`SELECT COUNT(*)::int AS count FROM active_borrows_view`;
-  const [bookStatsView] = await prisma.$queryRaw`SELECT COUNT(*)::int AS count FROM book_statistics_view`;
   console.log('Connection successful.');
   console.log(`Database time: ${healthcheck[0].now}\n`);
 
-  const [users, books, borrows, notifications, accountRequests, journals, readingLists] = await Promise.all([
+  const [users, books, borrows, notifications, accountRequests, journals, readingLists, reservations] = await Promise.all([
     prisma.user.count(),
     prisma.book.count(),
     prisma.borrowRecord.count(),
@@ -38,6 +36,7 @@ async function main() {
     prisma.accountRequest.count(),
     prisma.journal.count(),
     prisma.readingList.count(),
+    prisma.reservation.count(),
   ]);
 
   console.log('Model counts:');
@@ -48,10 +47,7 @@ async function main() {
   console.log(`  account_requests: ${accountRequests}`);
   console.log(`  journals: ${journals}`);
   console.log(`  reading_lists: ${readingLists}`);
-  console.log('');
-  console.log('Runtime database objects:');
-  console.log(`  active_borrows_view rows: ${activeBorrowsView.count}`);
-  console.log(`  book_statistics_view rows: ${bookStatsView.count}`);
+  console.log(`  reservations: ${reservations}`);
   console.log('');
 
   const sampleUser = await prisma.user.findFirst({

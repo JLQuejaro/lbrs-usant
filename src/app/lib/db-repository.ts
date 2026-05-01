@@ -5,6 +5,7 @@ import {
   JournalEntryType,
   NotificationType as PrismaNotificationType,
   Prisma,
+  ReservationStatus as PrismaReservationStatus,
   StaffUserType,
   StudentUserType,
   UserRole,
@@ -148,6 +149,16 @@ export interface Fine {
   paid_at?: Date | null;
   status: 'unpaid' | 'paid';
   created_at: Date;
+}
+
+export interface Reservation {
+  reservation_id: number;
+  book_id: number;
+  user_id: string;
+  queued_at: Date;
+  status: 'pending' | 'ready' | 'expired';
+  title?: string;
+  author?: string;
 }
 
 const studentTypeLabels: Record<StudentUserType, string> = {
@@ -725,12 +736,8 @@ export async function borrowBook(
 export async function returnBook(borrowId: number): Promise<BorrowRecord | null> {
   const borrow = await prisma.$transaction(async (tx) => {
     const existing = await tx.borrowRecord.findUnique({
-      where: {
-        id: borrowId,
-      },
-      select: {
-        bookId: true,
-      },
+      where: { id: borrowId },
+      select: { bookId: true },
     });
 
     if (!existing) {
@@ -738,9 +745,7 @@ export async function returnBook(borrowId: number): Promise<BorrowRecord | null>
     }
 
     const updatedBorrow = await tx.borrowRecord.update({
-      where: {
-        id: borrowId,
-      },
+      where: { id: borrowId },
       data: {
         returnedDate: new Date(),
         status: 'returned',
@@ -749,19 +754,41 @@ export async function returnBook(borrowId: number): Promise<BorrowRecord | null>
     });
 
     await tx.book.update({
-      where: {
-        id: existing.bookId,
-      },
+      where: { id: existing.bookId },
       data: {
-        availableCopies: {
-          increment: 1,
-        },
+        availableCopies: { increment: 1 },
         status: 'Available',
-        borrowCount: {
-          increment: 1,
-        },
+        borrowCount: { increment: 1 },
       },
     });
+
+    const nextReservation = await tx.reservation.findFirst({
+      where: {
+        bookId: existing.bookId,
+        status: 'pending',
+      },
+      orderBy: { queuedAt: 'asc' },
+      include: {
+        book: { select: { title: true } },
+      },
+    });
+
+    if (nextReservation) {
+      await tx.reservation.update({
+        where: { id: nextReservation.id },
+        data: { status: 'ready' },
+      });
+
+      await tx.notification.create({
+        data: {
+          userId: nextReservation.userId,
+          title: 'Book Available',
+          message: `"${nextReservation.book.title}" is now available for pickup.`,
+          notificationType: 'availability',
+          bookId: existing.bookId,
+        },
+      });
+    }
 
     return updatedBorrow;
   });
@@ -1126,6 +1153,76 @@ export async function hasUnpaidFines(userId: string): Promise<boolean> {
   });
 
   return count > 0;
+}
+
+// ============================================================
+// RESERVATIONS
+// ============================================================
+
+export async function createReservation(userId: string, bookId: number): Promise<Reservation> {
+  const existing = await prisma.reservation.findFirst({
+    where: { userId, bookId, status: 'pending' },
+  });
+
+  if (existing) {
+    throw new Error('Reservation already exists');
+  }
+
+  const reservation = await prisma.reservation.create({
+    data: { userId, bookId },
+    include: {
+      book: { select: { title: true, author: true } },
+    },
+  });
+
+  return {
+    reservation_id: reservation.id,
+    book_id: reservation.bookId,
+    user_id: reservation.userId,
+    queued_at: reservation.queuedAt,
+    status: reservation.status,
+    title: reservation.book.title,
+    author: reservation.book.author,
+  };
+}
+
+export async function getReservationsByUserId(userId: string): Promise<Reservation[]> {
+  const reservations = await prisma.reservation.findMany({
+    where: { userId },
+    include: {
+      book: { select: { title: true, author: true } },
+    },
+    orderBy: { queuedAt: 'asc' },
+  });
+
+  return reservations.map(r => ({
+    reservation_id: r.id,
+    book_id: r.bookId,
+    user_id: r.userId,
+    queued_at: r.queuedAt,
+    status: r.status,
+    title: r.book.title,
+    author: r.book.author,
+  }));
+}
+
+export async function getAllReservations(): Promise<Reservation[]> {
+  const reservations = await prisma.reservation.findMany({
+    include: {
+      book: { select: { title: true, author: true } },
+    },
+    orderBy: { queuedAt: 'asc' },
+  });
+
+  return reservations.map(r => ({
+    reservation_id: r.id,
+    book_id: r.bookId,
+    user_id: r.userId,
+    queued_at: r.queuedAt,
+    status: r.status,
+    title: r.book.title,
+    author: r.book.author,
+  }));
 }
 
 
