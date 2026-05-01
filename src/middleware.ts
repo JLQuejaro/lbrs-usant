@@ -1,5 +1,5 @@
 /**
- * Middleware for protecting API routes with JWT authentication
+ * Middleware for protecting API routes with JWT authentication and rate limiting
  */
 
 import { NextResponse } from 'next/server';

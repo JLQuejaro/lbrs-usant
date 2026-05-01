@@ -17,7 +17,8 @@
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
     "db:test": "node scripts/test-db.js",
-    "db:rehash-passwords": "ts-node scripts/rehash-passwords.ts"
+    "db:rehash-passwords": "ts-node scripts/rehash-passwords.ts",
+    "test:rate-limit": "node scripts/test-rate-limit.js"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.7.0",
