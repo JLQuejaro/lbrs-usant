@@ -96,7 +96,6 @@ async function main() {
   // Seed Books
   const books = [
     {
-      id: 1,
       title: 'Introduction to Algorithms',
       author: 'Thomas H. Cormen',
       genre: 'Computer Science',
@@ -113,7 +112,6 @@ async function main() {
       featured: true,
     },
     {
-      id: 2,
       title: 'Clean Code',
       author: 'Robert C. Martin',
       genre: 'Software Engineering',
@@ -130,7 +128,6 @@ async function main() {
       featured: true,
     },
     {
-      id: 3,
       title: 'The Pragmatic Programmer',
       author: 'Andrew Hunt',
       genre: 'Software Engineering',
@@ -149,7 +146,7 @@ async function main() {
   ];
 
   for (const book of books) {
-    const existing = await prisma.book.findUnique({ where: { id: book.id } });
+    const existing = await prisma.book.findFirst({ where: { title: book.title } });
     if (!existing) {
       await prisma.book.create({ data: book });
     }

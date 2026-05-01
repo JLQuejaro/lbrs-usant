@@ -96,7 +96,7 @@ export async function PATCH(request: NextRequest) {
       );
     }
     
-    const fine = await markFineAsPaid(parseInt(fineId, 10));
+    const fine = await markFineAsPaid(fineId);
     
     if (!fine) {
       return NextResponse.json(

@@ -47,9 +47,7 @@ function hasInventoryAccess(request: NextRequest) {
 function getBookId(request: NextRequest, fallbackId?: unknown) {
   const { searchParams } = new URL(request.url);
   const rawValue = searchParams.get('id') ?? fallbackId;
-  const id = Number(rawValue);
-
-  return Number.isInteger(id) ? id : null;
+  return typeof rawValue === 'string' && rawValue.trim() ? rawValue.trim() : null;
 }
 
 /**
@@ -75,16 +73,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '100', 10);
     
     if (id) {
-      const parsedId = parseInt(id, 10);
-
-      if (!Number.isInteger(parsedId)) {
-        return NextResponse.json(
-          { error: 'Bad Request', message: 'A valid book id is required' },
-          { status: 400 }
-        );
-      }
-
-      const book = await getBookById(parsedId);
+      const book = await getBookById(id);
       if (!book) {
         return NextResponse.json(
           { error: 'Not Found', message: 'Book not found' },

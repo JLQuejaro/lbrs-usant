@@ -11,9 +11,9 @@ async function testFineSystem() {
 
   // Test 1: calculateFine for circulation book (9 PHP/day)
   const circulationBorrow = {
-    borrow_id: 1,
+    borrow_id: 'test-borrow-1',
     user_id: 'test-user',
-    book_id: 1,
+    book_id: 'test-book-1',
     borrowed_date: new Date('2024-01-01'),
     due_date: new Date('2024-01-08'),
     returned_date: new Date('2024-01-15'), // 7 days late
@@ -25,9 +25,9 @@ async function testFineSystem() {
 
   // Test 2: calculateFine for reserve book (1 PHP/hour)
   const reserveBorrow = {
-    borrow_id: 2,
+    borrow_id: 'test-borrow-2',
     user_id: 'test-user',
-    book_id: 2,
+    book_id: 'test-book-2',
     borrowed_date: new Date('2024-01-01T10:00:00'),
     due_date: new Date('2024-01-01T14:00:00'),
     returned_date: new Date('2024-01-01T18:00:00'), // 4 hours late
@@ -39,9 +39,9 @@ async function testFineSystem() {
 
   // Test 3: No fine for on-time return
   const onTimeBorrow = {
-    borrow_id: 3,
+    borrow_id: 'test-borrow-3',
     user_id: 'test-user',
-    book_id: 3,
+    book_id: 'test-book-3',
     borrowed_date: new Date('2024-01-01'),
     due_date: new Date('2024-01-08'),
     returned_date: new Date('2024-01-07'),

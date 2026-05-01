@@ -25,14 +25,14 @@ async function testReservationSystem() {
     console.log('   - status (pending/ready/expired)\n');
 
     // Test enum
-    const enums = await prisma.$queryRaw`
+    const enums: any = await prisma.$queryRaw`
       SELECT enumlabel 
       FROM pg_enum 
       JOIN pg_type ON pg_enum.enumtypid = pg_type.oid 
       WHERE pg_type.typname = 'reservation_status'
     `;
     console.log('✅ ReservationStatus enum values:');
-    enums.forEach((e: any) => console.log(`   - ${e.enumlabel}`));
+    (enums as any[]).forEach((e: any) => console.log(`   - ${e.enumlabel}`));
     console.log('');
 
     console.log('✅ All tests passed!');

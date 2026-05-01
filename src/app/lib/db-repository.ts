@@ -40,7 +40,7 @@ export interface User {
 }
 
 export interface Book {
-  book_id: number;
+  book_id: string;
   title: string;
   author: string;
   genre: string;
@@ -76,9 +76,9 @@ export interface CreateBookInput {
 }
 
 export interface BorrowRecord {
-  borrow_id: number;
+  borrow_id: string;
   user_id: string;
-  book_id: number;
+  book_id: string;
   borrowed_date: Date;
   due_date: Date;
   returned_date?: Date | null;
@@ -108,7 +108,7 @@ export interface AccountRequest {
 }
 
 export interface Journal {
-  journal_id: number;
+  journal_id: string;
   title: string;
   publisher: string;
   subject: string;
@@ -119,7 +119,7 @@ export interface Journal {
 }
 
 export interface ReadingList {
-  reading_list_id: number;
+  reading_list_id: string;
   title: string;
   faculty_id: string | null;
   description?: string | null;
@@ -127,23 +127,23 @@ export interface ReadingList {
   is_active: boolean;
   created_at: Date;
   updated_at: Date;
-  book_ids?: number[];
+  book_ids?: string[];
 }
 
 export interface Notification {
-  notification_id: number;
+  notification_id: string;
   user_id: string;
   title: string;
   message: string;
   notification_type: 'availability' | 'reminder' | 'system';
-  book_id?: number | null;
+  book_id?: string | null;
   is_read: boolean;
   created_at: Date;
 }
 
 export interface Fine {
-  fine_id: number;
-  borrow_id: number;
+  fine_id: string;
+  borrow_id: string;
   amount: number;
   rate_per_day: number;
   paid_at?: Date | null;
@@ -152,8 +152,8 @@ export interface Fine {
 }
 
 export interface Reservation {
-  reservation_id: number;
-  book_id: number;
+  reservation_id: string;
+  book_id: string;
   user_id: string;
   queued_at: Date;
   status: 'pending' | 'ready' | 'expired';
@@ -386,12 +386,12 @@ function mapAccountRequestRecord(record: {
 }
 
 function mapNotificationRecord(record: {
-  id: number;
+  id: string;
   userId: string;
   title: string;
   message: string;
   notificationType: PrismaNotificationType;
-  bookId: number | null;
+  bookId: string | null;
   isRead: boolean;
   createdAt: Date;
 }): Notification {
@@ -496,7 +496,7 @@ export async function getAllBooks(limit = 100): Promise<Book[]> {
   return mapBooks(books);
 }
 
-export async function getBooksByIds(bookIds: number[]): Promise<Book[]> {
+export async function getBooksByIds(bookIds: string[]): Promise<Book[]> {
   if (bookIds.length === 0) {
     return [];
   }
@@ -516,7 +516,7 @@ export async function getBooksByIds(bookIds: number[]): Promise<Book[]> {
   return mapped.sort((left, right) => (order.get(left.book_id) ?? 0) - (order.get(right.book_id) ?? 0));
 }
 
-export async function getBookById(bookId: number): Promise<Book | null> {
+export async function getBookById(bookId: string): Promise<Book | null> {
   const book = await prisma.book.findUnique({
     where: {
       id: bookId,
@@ -630,7 +630,7 @@ export async function createBook(bookData: CreateBookInput): Promise<Book> {
   return mappedBook;
 }
 
-export async function updateBookFeatured(bookId: number, featured: boolean): Promise<Book> {
+export async function updateBookFeatured(bookId: string, featured: boolean): Promise<Book> {
   const book = await prisma.book.update({
     where: {
       id: bookId,
@@ -648,7 +648,7 @@ export async function updateBookFeatured(bookId: number, featured: boolean): Pro
   return mappedBook;
 }
 
-export async function deleteBook(bookId: number): Promise<boolean> {
+export async function deleteBook(bookId: string): Promise<boolean> {
   try {
     await prisma.book.delete({
       where: {
@@ -666,7 +666,7 @@ export async function deleteBook(bookId: number): Promise<boolean> {
   }
 }
 
-export async function incrementBookViews(bookId: number): Promise<void> {
+export async function incrementBookViews(bookId: string): Promise<void> {
   await prisma.book.update({
     where: {
       id: bookId,
@@ -685,12 +685,27 @@ export async function incrementBookViews(bookId: number): Promise<void> {
 
 export async function borrowBook(
   userId: string,
-  bookId: number,
+  bookId: string,
   dueDate: Date
 ): Promise<BorrowRecord> {
   const hasUnpaid = await hasUnpaidFines(userId);
   if (hasUnpaid) {
     throw new Error('Cannot borrow: user has unpaid fines');
+  }
+
+  const activeCount = await prisma.borrowRecord.count({
+    where: { userId, status: 'active' },
+  });
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { role: true },
+  });
+
+  const limit = user?.role === 'student' ? 3 : user?.role === 'faculty' ? 5 : 3;
+
+  if (activeCount >= limit) {
+    throw new Error('Borrow limit reached');
   }
 
   const borrow = await prisma.$transaction(async (tx) => {
@@ -733,7 +748,7 @@ export async function borrowBook(
   return mapBorrowRecord(borrow);
 }
 
-export async function returnBook(borrowId: number): Promise<BorrowRecord | null> {
+export async function returnBook(borrowId: string): Promise<BorrowRecord | null> {
   const borrow = await prisma.$transaction(async (tx) => {
     const existing = await tx.borrowRecord.findUnique({
       where: { id: borrowId },
@@ -828,7 +843,7 @@ export async function getOverdueBorrows(): Promise<BorrowRecord[]> {
   return borrows.map(mapBorrowRecord);
 }
 
-export async function getBorrowById(borrowId: number): Promise<BorrowRecord | null> {
+export async function getBorrowById(borrowId: string): Promise<BorrowRecord | null> {
   const borrow = await prisma.borrowRecord.findUnique({
     where: {
       id: borrowId,
@@ -1077,7 +1092,7 @@ export function calculateFine(borrowRecord: BorrowRecord, bookType: 'circulation
   }
 }
 
-export async function createFine(borrowId: number, amount: number, ratePerDay: number): Promise<Fine> {
+export async function createFine(borrowId: string, amount: number, ratePerDay: number): Promise<Fine> {
   const fine = await prisma.fine.create({
     data: {
       borrowId,
@@ -1098,7 +1113,7 @@ export async function createFine(borrowId: number, amount: number, ratePerDay: n
   };
 }
 
-export async function markFineAsPaid(fineId: number): Promise<Fine | null> {
+export async function markFineAsPaid(fineId: string): Promise<Fine | null> {
   const fine = await prisma.fine.update({
     where: { id: fineId },
     data: {
@@ -1159,7 +1174,7 @@ export async function hasUnpaidFines(userId: string): Promise<boolean> {
 // RESERVATIONS
 // ============================================================
 
-export async function createReservation(userId: string, bookId: number): Promise<Reservation> {
+export async function createReservation(userId: string, bookId: string): Promise<Reservation> {
   const existing = await prisma.reservation.findFirst({
     where: { userId, bookId, status: 'pending' },
   });
@@ -1223,6 +1238,34 @@ export async function getAllReservations(): Promise<Reservation[]> {
     title: r.book.title,
     author: r.book.author,
   }));
+}
+
+// ============================================================
+// PASSWORD RESET TOKENS
+// ============================================================
+
+export async function createPasswordResetToken(userId: string, token: string, expiresAt: Date): Promise<void> {
+  await prisma.passwordResetToken.create({
+    data: { userId, token, expiresAt },
+  });
+}
+
+export async function getPasswordResetToken(token: string) {
+  return prisma.passwordResetToken.findUnique({
+    where: { token },
+    include: { user: true },
+  });
+}
+
+export async function deletePasswordResetToken(token: string): Promise<void> {
+  await prisma.passwordResetToken.delete({ where: { token } });
+}
+
+export async function updateUserPassword(userId: string, passwordHash: string): Promise<void> {
+  await prisma.user.update({
+    where: { id: userId },
+    data: { passwordHash },
+  });
 }
 
 

@@ -173,7 +173,7 @@ export async function PUT(request: NextRequest) {
     }
     
     // Fetch borrow record to check ownership
-    const existingBorrow = await getBorrowById(parseInt(borrowId, 10));
+    const existingBorrow = await getBorrowById(borrowId);
     
     if (!existingBorrow) {
       return NextResponse.json(
@@ -194,7 +194,7 @@ export async function PUT(request: NextRequest) {
     }
     
     // Execute return
-    const borrow = await returnBook(parseInt(borrowId, 10));
+    const borrow = await returnBook(borrowId);
     
     return NextResponse.json(
       { message: 'Book returned successfully', borrow: mapBorrow(borrow!) },
