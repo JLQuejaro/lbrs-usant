@@ -1,5 +1,6 @@
 /* src/app/globals.css */
 @import "tailwindcss";
+@source "../**/*.{ts,tsx}";
 
 @theme {
   /* This tells Tailwind to create bg-usant-red, text-usant-orange, etc. */

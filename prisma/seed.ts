@@ -25,71 +25,71 @@ async function main() {
   const staffPassword = await bcrypt.hash('staff123', 10);
 
   // Seed Admin User
-  await prisma.user.upsert({
-    where: { email: 'admin@usant.edu' },
-    update: {},
-    create: {
-      id: '00000000-0000-0000-0000-000000000008',
-      username: 'Admin User',
-      email: 'admin@usant.edu',
-      passwordHash: adminPassword,
-      role: 'admin',
-      adminType: 'SYSTEM_ADMINISTRATOR',
-      approvalStatus: 'approved',
-      isActive: true,
-    },
-  });
+  const admin = await prisma.user.findUnique({ where: { email: 'admin@usant.edu' } });
+  if (!admin) {
+    await prisma.user.create({
+      data: {
+        username: 'Admin User',
+        email: 'admin@usant.edu',
+        passwordHash: adminPassword,
+        role: 'admin',
+        adminType: 'SYSTEM_ADMINISTRATOR',
+        approvalStatus: 'approved',
+        isActive: true,
+      },
+    });
+  }
 
   // Seed Student
-  await prisma.user.upsert({
-    where: { email: 'john@usant.edu' },
-    update: {},
-    create: {
-      id: '00000000-0000-0000-0000-000000000001',
-      username: 'John Student',
-      email: 'john@usant.edu',
-      passwordHash: studentPassword,
-      role: 'student',
-      studentType: 'UNDERGRADUATE_STUDENT',
-      course: 'Computer Science',
-      yearLevel: '4th Year',
-      approvalStatus: 'approved',
-      isActive: true,
-    },
-  });
+  const student = await prisma.user.findUnique({ where: { email: 'john@usant.edu' } });
+  if (!student) {
+    await prisma.user.create({
+      data: {
+        username: 'John Student',
+        email: 'john@usant.edu',
+        passwordHash: studentPassword,
+        role: 'student',
+        studentType: 'UNDERGRADUATE_STUDENT',
+        course: 'Computer Science',
+        yearLevel: '4th Year',
+        approvalStatus: 'approved',
+        isActive: true,
+      },
+    });
+  }
 
   // Seed Faculty
-  await prisma.user.upsert({
-    where: { email: 'rob@usant.edu' },
-    update: {},
-    create: {
-      id: '00000000-0000-0000-0000-000000000006',
-      username: 'Dr. Robert Johnson',
-      email: 'rob@usant.edu',
-      passwordHash: facultyPassword,
-      role: 'faculty',
-      facultyType: 'PROFESSOR',
-      department: 'Computer Science',
-      approvalStatus: 'approved',
-      isActive: true,
-    },
-  });
+  const faculty = await prisma.user.findUnique({ where: { email: 'rob@usant.edu' } });
+  if (!faculty) {
+    await prisma.user.create({
+      data: {
+        username: 'Dr. Robert Johnson',
+        email: 'rob@usant.edu',
+        passwordHash: facultyPassword,
+        role: 'faculty',
+        facultyType: 'PROFESSOR',
+        department: 'Computer Science',
+        approvalStatus: 'approved',
+        isActive: true,
+      },
+    });
+  }
 
   // Seed Staff (Librarian)
-  await prisma.user.upsert({
-    where: { email: 'maria@usant.edu' },
-    update: {},
-    create: {
-      id: '00000000-0000-0000-0000-000000000007',
-      username: 'Maria Santos',
-      email: 'maria@usant.edu',
-      passwordHash: staffPassword,
-      role: 'staff',
-      staffType: 'LIBRARIAN',
-      approvalStatus: 'approved',
-      isActive: true,
-    },
-  });
+  const staff = await prisma.user.findUnique({ where: { email: 'maria@usant.edu' } });
+  if (!staff) {
+    await prisma.user.create({
+      data: {
+        username: 'Maria Santos',
+        email: 'maria@usant.edu',
+        passwordHash: staffPassword,
+        role: 'staff',
+        staffType: 'LIBRARIAN',
+        approvalStatus: 'approved',
+        isActive: true,
+      },
+    });
+  }
 
   console.log('✅ Users seeded successfully');
 
@@ -149,11 +149,10 @@ async function main() {
   ];
 
   for (const book of books) {
-    await prisma.book.upsert({
-      where: { id: book.id },
-      update: {},
-      create: book,
-    });
+    const existing = await prisma.book.findUnique({ where: { id: book.id } });
+    if (!existing) {
+      await prisma.book.create({ data: book });
+    }
   }
 
   console.log('✅ Books seeded successfully');

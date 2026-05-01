@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { ArrowRight, UserPlus, Loader2, Check, X, AlertCircle, Shield } from 'lucide-react';
+import { ArrowRight, UserPlus, Loader2, Check, X, AlertCircle, Shield, Eye, EyeOff } from 'lucide-react';
 import Image from 'next/image';
 import { userTypesByRole, UserRole, UserType } from './lib/userTypes';
 import { useRouter } from 'next/navigation';
@@ -17,6 +17,8 @@ export default function AuthPage() {
   const [isRegistering, setIsRegistering] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -361,18 +363,27 @@ export default function AuthPage() {
               {/* Password */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">Password</label>
-                <input
-                  required
-                  type="password"
-                  placeholder={isRegistering ? "Min 12 chars, uppercase, lowercase, number, special" : "••••••••"}
-                  value={password}
-                  onChange={handlePasswordChange}
-                  className={`w-full px-4 py-3.5 rounded-xl bg-gray-50 border-2 ${
-                    isRegistering && passwordValidation && !passwordValidation.isValid
-                      ? 'border-red-500 focus:border-red-500 focus:ring-red-50'
-                      : 'border-gray-200 focus:border-usant-red focus:ring-red-50'
-                  } focus:bg-white focus:ring-4 focus:outline-none transition-all text-gray-900`}
-                />
+                <div className="relative">
+                  <input
+                    required
+                    type={showPassword ? "text" : "password"}
+                    placeholder={isRegistering ? "Min 12 chars, uppercase, lowercase, number, special" : "••••••••"}
+                    value={password}
+                    onChange={handlePasswordChange}
+                    className={`w-full px-4 py-3.5 pr-12 rounded-xl bg-gray-50 border-2 ${
+                      isRegistering && passwordValidation && !passwordValidation.isValid
+                        ? 'border-red-500 focus:border-red-500 focus:ring-red-50'
+                        : 'border-gray-200 focus:border-usant-red focus:ring-red-50'
+                    } focus:bg-white focus:ring-4 focus:outline-none transition-all text-gray-900`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
+                  >
+                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
+                </div>
                 
                 {/* Password Strength Indicator (Registration Only) */}
                 {isRegistering && password && passwordValidation && (
@@ -439,21 +450,31 @@ export default function AuthPage() {
               {isRegistering && (
                 <div className="animate-in slide-in-from-top-2 fade-in duration-300">
                   <label className="block text-sm font-semibold text-gray-700 mb-2">Confirm Password</label>
-                  <input
-                    required
-                    type="password"
-                    placeholder="Re-enter your password"
-                    value={confirmPassword}
-                    onChange={handleConfirmPasswordChange}
-                    disabled={!passwordValidation?.isValid}
-                    className={`w-full px-4 py-3.5 rounded-xl bg-gray-50 border-2 ${
-                      confirmPasswordError
-                        ? 'border-red-500 focus:border-red-500 focus:ring-red-50'
-                        : confirmPassword && !confirmPasswordError
-                        ? 'border-green-500 focus:border-green-500 focus:ring-green-50'
-                        : 'border-gray-200 focus:border-usant-red focus:ring-red-50'
-                    } focus:bg-white focus:ring-4 focus:outline-none transition-all text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed`}
-                  />
+                  <div className="relative">
+                    <input
+                      required
+                      type={showConfirmPassword ? "text" : "password"}
+                      placeholder="Re-enter your password"
+                      value={confirmPassword}
+                      onChange={handleConfirmPasswordChange}
+                      disabled={!passwordValidation?.isValid}
+                      className={`w-full px-4 py-3.5 pr-12 rounded-xl bg-gray-50 border-2 ${
+                        confirmPasswordError
+                          ? 'border-red-500 focus:border-red-500 focus:ring-red-50'
+                          : confirmPassword && !confirmPasswordError
+                          ? 'border-green-500 focus:border-green-500 focus:ring-green-50'
+                          : 'border-gray-200 focus:border-usant-red focus:ring-red-50'
+                      } focus:bg-white focus:ring-4 focus:outline-none transition-all text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      disabled={!passwordValidation?.isValid}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </button>
+                  </div>
                   {confirmPasswordError && (
                     <p className="text-xs text-red-600 mt-2 flex items-center gap-1 animate-in slide-in-from-top-1 duration-200">
                       <X size={14} />
