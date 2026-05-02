@@ -804,6 +804,13 @@ export async function borrowBook(
     throw new Error('Borrow limit reached');
   }
 
+  const existingActiveBorrow = await prisma.borrowRecord.findFirst({
+    where: { userId, bookId, status: 'active' },
+  });
+  if (existingActiveBorrow) {
+    throw new Error('User already has an active borrow of this book');
+  }
+
   const borrow = await prisma.$transaction(async (tx) => {
     const book = await tx.book.findUnique({
       where: { id: bookId },

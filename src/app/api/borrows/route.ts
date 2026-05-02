@@ -8,7 +8,23 @@ import {
   getBorrowById
 } from '@/app/lib/db-repository';
 
-function mapBorrow(record: any) {
+interface BorrowRow {
+  borrow_id: string;
+  user_id: string;
+  book_id: string;
+  title?: string;
+  book_title?: string;
+  author: string;
+  color_theme: string;
+  borrowed_date: Date;
+  due_date: Date;
+  returned_date: Date | null;
+  status: string;
+  username: string;
+  email: string;
+}
+
+function mapBorrow(record: BorrowRow) {
   return {
     id: record.borrow_id,
     userId: record.user_id,
