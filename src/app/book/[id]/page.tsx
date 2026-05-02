@@ -9,7 +9,7 @@ import BorrowModal from '@/app/components/BorrowModal';
 import { useAuth } from '@/app/contexts/AuthContext';
 
 interface Book {
-  id: number;
+  id: string;
   title: string;
   author: string;
   genre: string;
@@ -24,7 +24,7 @@ export default function BookDetailsPage({ params }: { params: Promise<{ id: stri
   const router = useRouter();
   const { token } = useAuth();
   const unwrappedParams = use(params);
-  const bookId = parseInt(unwrappedParams.id);
+  const bookId = unwrappedParams.id;
   const [book, setBook] = useState<Book | null>(null);
   const [relatedBooks, setRelatedBooks] = useState<Book[]>([]);
   const [isBorrowed, setIsBorrowed] = useState(false);
@@ -64,7 +64,7 @@ export default function BookDetailsPage({ params }: { params: Promise<{ id: stri
 
         if (borrowsRes.ok) {
           const data = await borrowsRes.json();
-          const borrowed = (data.borrows || []).some((b: any) => b.bookId === bookId && b.status === 'active');
+          const borrowed = (data.borrows || []).some((b: { bookId: string; status: string }) => b.bookId === bookId && b.status === 'active');
           if (isMounted) setIsBorrowed(borrowed);
         }
 
@@ -95,7 +95,7 @@ export default function BookDetailsPage({ params }: { params: Promise<{ id: stri
       .then(res => res.ok ? res.json() : null)
       .then(data => {
         if (!data) return;
-        const borrowed = (data.borrows || []).some((b: any) => b.bookId === bookId && b.status === 'active');
+        const borrowed = (data.borrows || []).some((b: { bookId: string; status: string }) => b.bookId === bookId && b.status === 'active');
         setIsBorrowed(borrowed);
       })
       .catch(error => console.error('Failed to refresh borrow status:', error));

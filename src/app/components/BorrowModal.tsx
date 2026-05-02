@@ -9,7 +9,7 @@ interface BorrowModalProps {
   isOpen: boolean;
   onClose: () => void;
   bookTitle: string;
-  bookId: number;
+  bookId: string;
 }
 
 export default function BorrowModal({ isOpen, onClose, bookTitle, bookId }: BorrowModalProps) {
