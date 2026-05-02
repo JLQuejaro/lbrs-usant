@@ -7,3 +7,14 @@
 
 Prisma Studio is running at: http://localhost:5555
 
+{
+  severity_local: 'WARNING',
+  severity: 'WARNING',
+  code: '57P02',
+  message: 'terminating connection because of crash of another server process',
+  detail: 'The postmaster has commanded this server process to roll back the current transaction and exit, because another server process exited abnormally and possibly corrupted shared memory.',
+  hint: 'In a moment you should be able to reconnect to the database and repeat your command.',
+  file: 'postgres.c',
+  line: '2994',
+  routine: 'quickdie'
+}

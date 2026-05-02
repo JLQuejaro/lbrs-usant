@@ -99,9 +99,6 @@ export default function LibrarianDashboard() {
       body: JSON.stringify({
         ...newBook,
         publicationYear: newBook.year,
-        stockQuantity: 1,
-        availableCopies: newBook.stock ? 1 : 0,
-        status: newBook.stock ? 'Available' : 'Borrowed',
       }),
     });
 

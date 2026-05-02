@@ -89,16 +89,25 @@ export default function BookDetailsPage({ params }: { params: Promise<{ id: stri
   const handleModalClose = () => {
     setIsBorrowModalOpen(false);
     if (!token) return;
-    fetch('/api/borrows', {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then(res => res.ok ? res.json() : null)
-      .then(data => {
-        if (!data) return;
-        const borrowed = (data.borrows || []).some((b: { bookId: string; status: string }) => b.bookId === bookId && b.status === 'active');
-        setIsBorrowed(borrowed);
+    Promise.all([
+      fetch('/api/borrows', { headers: { Authorization: `Bearer ${token}` } }),
+      fetch(`/api/books?id=${bookId}`, { headers: { Authorization: `Bearer ${token}` } }),
+    ])
+      .then(async ([borrowsRes, bookRes]) => {
+        if (borrowsRes.ok) {
+          const data = await borrowsRes.json();
+          const borrowed = (data.borrows || []).some(
+            (b: { bookId: string; status: string }) =>
+              b.bookId === bookId && b.status === 'active'
+          );
+          setIsBorrowed(borrowed);
+        }
+        if (bookRes.ok) {
+          const data = await bookRes.json();
+          setBook(data.book);
+        }
       })
-      .catch(error => console.error('Failed to refresh borrow status:', error));
+      .catch(err => console.error('Failed to refresh after borrow:', err));
   };
 
   if (!book && !isLoading) {
@@ -197,7 +206,7 @@ export default function BookDetailsPage({ params }: { params: Promise<{ id: stri
                 }`}
               >
                 <BookOpen size={20} /> 
-                {isBorrowed ? 'Already Borrowed' : !book.stock ? 'Out of Stock' : 'Borrow Now'}
+                {!book.stock ? 'Out of Stock' : isBorrowed ? 'Already Borrowed' : 'Borrow Now'}
               </button>
 
               <div className="grid grid-cols-1 gap-3">
@@ -213,9 +222,9 @@ export default function BookDetailsPage({ params }: { params: Promise<{ id: stri
              <div className="mb-6">
               <div className="flex items-center gap-2 mb-2">
                  <span className="px-3 py-1 bg-red-50 text-usant-red text-xs font-bold uppercase tracking-wider rounded-full">{book.genre}</span>
-                 <span className={`px-3 py-1 text-xs font-bold uppercase tracking-wider rounded-full flex items-center gap-1 ${(!book.stock || isBorrowed) ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'}`}>
-                   <span className={`w-2 h-2 rounded-full ${(!book.stock || isBorrowed) ? 'bg-red-500' : 'bg-green-500'}`}></span> 
-                   {isBorrowed ? 'Currently with you' : !book.stock ? 'Out of Stock' : 'Available'}
+                 <span className={`px-3 py-1 text-xs font-bold uppercase tracking-wider rounded-full flex items-center gap-1 ${!book.stock ? 'bg-red-50 text-red-700' : isBorrowed ? 'bg-blue-50 text-blue-700' : 'bg-green-50 text-green-700'}`}>
+                   <span className={`w-2 h-2 rounded-full ${!book.stock ? 'bg-red-500' : isBorrowed ? 'bg-blue-500' : 'bg-green-500'}`}></span> 
+                   {!book.stock ? 'Out of Stock' : isBorrowed ? 'Currently with you' : 'Available'}
                  </span>
               </div>
               <h1 className="text-4xl font-bold text-gray-900 mb-2">{book.title}</h1>

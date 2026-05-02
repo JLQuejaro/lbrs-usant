@@ -9,7 +9,7 @@ export interface CreateBookFormInput {
   author: string;
   genre: string;
   year: number | null;
-  stock: boolean;
+  stockQuantity: number;
   courses: string[];
 }
 
@@ -27,7 +27,7 @@ function createDefaultFormData() {
     author: '',
     genre: 'Computer Science',
     year: new Date().getFullYear().toString(),
-    stock: true,
+    stockQuantity: '1',
     courses: [] as string[],
   };
 }
@@ -60,13 +60,14 @@ export default function AddBookModal({ isOpen, onClose, onSave }: AddBookModalPr
 
     try {
       const parsedYear = Number(formData.year);
+      const parsedStockQuantity = Number(formData.stockQuantity);
 
       await onSave({
         title: formData.title.trim(),
         author: formData.author.trim(),
         genre: formData.genre,
         year: Number.isInteger(parsedYear) ? parsedYear : null,
-        stock: formData.stock,
+        stockQuantity: Number.isInteger(parsedStockQuantity) && parsedStockQuantity > 0 ? parsedStockQuantity : 1,
         courses: formData.courses,
       });
 
@@ -170,6 +171,21 @@ export default function AddBookModal({ isOpen, onClose, onSave }: AddBookModalPr
             </div>
           </div>
 
+          {/* Stock Quantity */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">Stock Quantity</label>
+            <input 
+              required
+              type="number" 
+              min="1"
+              placeholder="1"
+              value={formData.stockQuantity}
+              disabled={isSaving}
+              onChange={(e) => setFormData({...formData, stockQuantity: e.target.value})}
+              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-usant-red focus:border-usant-red focus:outline-none transition-all"
+            />
+          </div>
+
           {/* Courses Multi-Select */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">Applicable Courses</label>
@@ -187,21 +203,6 @@ export default function AddBookModal({ isOpen, onClose, onSave }: AddBookModalPr
                 </label>
               ))}
             </div>
-          </div>
-
-          {/* Stock Status */}
-          <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
-             <input 
-                type="checkbox" 
-                id="stock"
-                checked={formData.stock}
-                disabled={isSaving}
-                onChange={(e) => setFormData({...formData, stock: e.target.checked})}
-                className="w-5 h-5 rounded text-usant-red focus:ring-usant-red border-gray-300 cursor-pointer"
-             />
-             <label htmlFor="stock" className="text-sm font-semibold text-gray-700 cursor-pointer select-none">
-               Available in Stock
-             </label>
           </div>
 
           {errorMessage && (
