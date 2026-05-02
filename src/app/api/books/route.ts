@@ -201,8 +201,14 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Create book error:', error);
+    console.error('Error details:', error instanceof Error ? error.message : String(error));
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     return NextResponse.json(
-      { error: 'Internal Server Error', message: 'Failed to create book' },
+      { 
+        error: 'Internal Server Error', 
+        message: error instanceof Error ? error.message : 'Failed to create book',
+        details: process.env.NODE_ENV === 'development' ? String(error) : undefined
+      },
       { status: 500 }
     );
   }

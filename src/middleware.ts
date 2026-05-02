@@ -7,6 +7,11 @@ import type { NextRequest } from 'next/server';
 import { verifyToken } from '@/app/lib/auth';
 import { loginRateLimiter } from '@/app/lib/rate-limiter';
 
+// Ensure JWT_SECRET is available
+if (!process.env.JWT_SECRET) {
+  console.error('CRITICAL: JWT_SECRET is not defined in middleware');
+}
+
 // Routes that don't require authentication
 const PUBLIC_ROUTES = [
   '/api/auth/login',
@@ -98,4 +103,5 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: '/api/:path*',
+  runtime: 'nodejs',
 };
