@@ -382,39 +382,40 @@ export default function LibrarianDashboard() {
                 </div>
               </div>
 
-              {/* Popular Genres (Mock Charts) */}
+              {/* Popular Genres */}
               <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
                 <h3 className="font-bold text-gray-900 mb-6 flex items-center gap-2">
                   <Layers className="text-orange-500" size={20} /> Popular Genres
                 </h3>
                 <div className="space-y-6">
-                  <GenreBar label="Computer Science" count={145} color="bg-red-500" max={200} />
-                  <GenreBar label="Software Engineering" count={98} color="bg-blue-500" max={200} />
-                  <GenreBar label="Business" count={76} color="bg-emerald-500" max={200} />
-                  <GenreBar label="Mathematics" count={54} color="bg-amber-500" max={200} />
-                  <GenreBar label="History" count={32} color="bg-purple-500" max={200} />
+                  {(() => {
+                    const genreCounts = books.reduce((acc, book) => {
+                      acc[book.genre] = (acc[book.genre] || 0) + book.borrowCount;
+                      return acc;
+                    }, {} as Record<string, number>);
+                    const sortedGenres = Object.entries(genreCounts)
+                      .sort(([, a], [, b]) => b - a)
+                      .slice(0, 5);
+                    const maxCount = sortedGenres[0]?.[1] || 1;
+                    const colors = ['bg-red-500', 'bg-blue-500', 'bg-emerald-500', 'bg-amber-500', 'bg-purple-500'];
+                    return sortedGenres.map(([genre, count], idx) => (
+                      <GenreBar key={genre} label={genre} count={count} color={colors[idx]} max={maxCount} />
+                    ));
+                  })()}
                 </div>
               </div>
 
             </div>
 
-            {/* Borrowing Activity Trends */}
+            {/* Borrowing Activity Note */}
             <div className="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm">
               <div className="flex justify-between items-center mb-8">
-                <h3 className="font-bold text-gray-900 text-lg">Borrowing Activity (Last 7 Days)</h3>
-                <select className="text-sm border-gray-200 rounded-lg p-1 text-gray-500">
-                   <option>Weekly View</option>
-                   <option>Monthly View</option>
-                </select>
+                <h3 className="font-bold text-gray-900 text-lg">Borrowing Activity</h3>
               </div>
-              <div className="flex items-end justify-between h-48 gap-4 px-4">
-                <TrendBar day="Mon" height="60%" />
-                <TrendBar day="Tue" height="85%" />
-                <TrendBar day="Wed" height="45%" />
-                <TrendBar day="Thu" height="70%" />
-                <TrendBar day="Fri" height="95%" />
-                <TrendBar day="Sat" height="30%" />
-                <TrendBar day="Sun" height="20%" />
+              <div className="text-center py-12 text-gray-500">
+                <BarChart3 size={48} className="mx-auto mb-4 opacity-20" />
+                <p className="font-medium">Activity trends available in Reports tab</p>
+                <p className="text-sm mt-2">Real-time borrowing data is tracked in the system</p>
               </div>
             </div>
           </div>
@@ -455,27 +456,10 @@ export default function LibrarianDashboard() {
                   Export PDF <FileText size={14} />
                 </button>
               </div>
-              <div className="divide-y divide-gray-100">
-                {[
-                  { user: 'John Student', book: 'Clean Code', action: 'Returned', time: '10:15 AM', status: 'On Time' },
-                  { user: 'Maria Santos', book: 'Introduction to Algorithms', action: 'Borrowed', time: '09:45 AM', status: 'Active' },
-                  { user: 'Alice Smith', book: 'Deep Work', action: 'Overdue', time: '09:00 AM', status: 'Penalty' },
-                  { user: 'Bob Brown', book: 'Design Patterns', action: 'Returned', time: 'Yesterday', status: 'On Time' },
-                ].map((log, i) => (
-                  <div key={i} className="px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition">
-                    <div className="flex gap-4 items-center">
-                      <div className={`w-2 h-2 rounded-full ${log.action === 'Borrowed' ? 'bg-blue-500' : log.action === 'Overdue' ? 'bg-red-500' : 'bg-green-500'}`}></div>
-                      <div>
-                        <div className="text-sm font-bold text-gray-900">{log.user}</div>
-                        <div className="text-xs text-gray-500">{log.book}</div>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-sm font-medium text-gray-700">{log.action}</div>
-                      <div className="text-xs text-gray-400 font-mono">{log.time}</div>
-                    </div>
-                  </div>
-                ))}
+              <div className="p-12 text-center text-gray-500">
+                <FileText className="mx-auto mb-4 opacity-20" size={48} />
+                <p className="font-medium text-gray-900">Transaction logs are stored in the database</p>
+                <p className="text-sm mt-2">All borrowing and return activities are tracked in real-time</p>
               </div>
             </div>
           </div>
@@ -585,14 +569,25 @@ export default function LibrarianDashboard() {
                    <p className="text-sm text-gray-500 mb-4">Under-represented subjects</p>
                    
                    <div className="space-y-4">
-                      <div className="p-3 bg-gray-50 rounded-lg">
-                         <div className="text-xs font-bold text-gray-700">Cybersecurity</div>
-                         <div className="text-[10px] text-gray-400">Requested 12x this month • 0 books</div>
-                      </div>
-                      <div className="p-3 bg-gray-50 rounded-lg">
-                         <div className="text-xs font-bold text-gray-700">Data Science</div>
-                         <div className="text-[10px] text-gray-400">Requested 8x this month • 2 books</div>
-                      </div>
+                      {(() => {
+                        const genreCounts = books.reduce((acc, book) => {
+                          acc[book.genre] = (acc[book.genre] || 0) + 1;
+                          return acc;
+                        }, {} as Record<string, number>);
+                        const underRepresented = Object.entries(genreCounts)
+                          .filter(([, count]) => count < 3)
+                          .slice(0, 2);
+                        return underRepresented.length > 0 ? underRepresented.map(([genre, count]) => (
+                          <div key={genre} className="p-3 bg-gray-50 rounded-lg">
+                            <div className="text-xs font-bold text-gray-700">{genre}</div>
+                            <div className="text-[10px] text-gray-400">Only {count} book{count !== 1 ? 's' : ''} available</div>
+                          </div>
+                        )) : (
+                          <div className="p-3 bg-green-50 rounded-lg text-center">
+                            <div className="text-xs font-bold text-green-700">All subjects well-represented</div>
+                          </div>
+                        );
+                      })()}
                    </div>
                    
                    <button className="w-full mt-auto py-2 border-2 border-gray-200 text-gray-600 rounded-lg text-sm font-bold hover:bg-gray-50 transition">

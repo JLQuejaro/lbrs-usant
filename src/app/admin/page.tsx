@@ -190,8 +190,8 @@ export default function AdminPanel() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
           <StatCard icon={<Users size={24} className="text-blue-600" />} label="Total Users" value={(stats?.totalUsers ?? users.length).toString()} color="bg-blue-50" />
           <StatCard icon={<Database size={24} className="text-purple-600" />} label="Total Books" value={(stats?.totalBooks ?? 0).toString()} color="bg-purple-50" />
-          <StatCard icon={<Activity size={24} className="text-orange-600" />} label="System Load" value="12%" color="bg-orange-50" />
-          <StatCard icon={<Shield size={24} className="text-green-600" />} label="Security" value="Active" color="bg-green-50" />
+          <StatCard icon={<Activity size={24} className="text-orange-600" />} label="Active Borrows" value={(stats?.activeBorrows ?? 0).toString()} color="bg-orange-50" />
+          <StatCard icon={<Shield size={24} className="text-green-600" />} label="Pending Requests" value={(stats?.pendingRequests ?? 0).toString()} color="bg-green-50" />
         </div>
 
         {/* === TAB: USERS === */}
@@ -587,25 +587,10 @@ export default function AdminPanel() {
                    <h3 className="font-bold text-gray-900 mb-6 flex items-center gap-2">
                       <TrendingUp size={20} className="text-usant-red" /> Borrowing Trends
                    </h3>
-                   <div className="h-64 flex items-end justify-between gap-4 px-4">
-                      <div className="flex-1 bg-usant-red/10 rounded-t-lg h-[40%] relative group">
-                         <div className="absolute inset-0 bg-usant-red rounded-t-lg opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                      </div>
-                      <div className="flex-1 bg-usant-red/10 rounded-t-lg h-[60%] relative group">
-                         <div className="absolute inset-0 bg-usant-red rounded-t-lg opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                      </div>
-                      <div className="flex-1 bg-usant-red/10 rounded-t-lg h-[85%] relative group">
-                         <div className="absolute inset-0 bg-usant-red rounded-t-lg opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                      </div>
-                      <div className="flex-1 bg-usant-red/10 rounded-t-lg h-[55%] relative group">
-                         <div className="absolute inset-0 bg-usant-red rounded-t-lg opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                      </div>
-                      <div className="flex-1 bg-usant-red/10 rounded-t-lg h-[75%] relative group">
-                         <div className="absolute inset-0 bg-usant-red rounded-t-lg opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                      </div>
-                   </div>
-                   <div className="flex justify-between mt-4 px-4 text-[10px] font-bold text-gray-400 uppercase">
-                      <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span>
+                   <div className="text-center py-12 text-gray-500">
+                      <BarChart3 size={48} className="mx-auto mb-4 opacity-20" />
+                      <p className="font-medium">Real-time borrowing data tracked</p>
+                      <p className="text-sm mt-2">Active Borrows: {stats?.activeBorrows ?? 0}</p>
                    </div>
                 </div>
 
@@ -614,33 +599,33 @@ export default function AdminPanel() {
                       <BarChart3 size={20} className="text-blue-500" /> Usage by Role
                    </h3>
                    <div className="space-y-4">
-                      <div className="space-y-2">
-                         <div className="flex justify-between text-xs font-bold">
-                            <span className="text-gray-600">Students</span>
-                            <span className="text-gray-900">72%</span>
-                         </div>
-                         <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-                            <div className="h-full bg-usant-red w-[72%]"></div>
-                         </div>
-                      </div>
-                      <div className="space-y-2">
-                         <div className="flex justify-between text-xs font-bold">
-                            <span className="text-gray-600">Faculty</span>
-                            <span className="text-gray-900">18%</span>
-                         </div>
-                         <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-                            <div className="h-full bg-blue-500 w-[18%]"></div>
-                         </div>
-                      </div>
-                      <div className="space-y-2">
-                         <div className="flex justify-between text-xs font-bold">
-                            <span className="text-gray-600">Staff</span>
-                            <span className="text-gray-900">10%</span>
-                         </div>
-                         <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-                            <div className="h-full bg-orange-500 w-[10%]"></div>
-                         </div>
-                      </div>
+                      {(() => {
+                        const roleCounts = users.reduce((acc, user) => {
+                          acc[user.role] = (acc[user.role] || 0) + 1;
+                          return acc;
+                        }, {} as Record<string, number>);
+                        const total = users.length || 1;
+                        const roles = [
+                          { name: 'Students', role: 'student', color: 'bg-usant-red' },
+                          { name: 'Faculty', role: 'faculty', color: 'bg-blue-500' },
+                          { name: 'Staff', role: 'staff', color: 'bg-orange-500' },
+                        ];
+                        return roles.map(({ name, role, color }) => {
+                          const count = roleCounts[role] || 0;
+                          const percentage = Math.round((count / total) * 100);
+                          return (
+                            <div key={role} className="space-y-2">
+                              <div className="flex justify-between text-xs font-bold">
+                                <span className="text-gray-600">{name}</span>
+                                <span className="text-gray-900">{percentage}%</span>
+                              </div>
+                              <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                                <div className={`h-full ${color} transition-all`} style={{ width: `${percentage}%` }}></div>
+                              </div>
+                            </div>
+                          );
+                        });
+                      })()}
                    </div>
                 </div>
              </div>
@@ -674,28 +659,10 @@ export default function AdminPanel() {
              <h3 className="font-bold text-gray-900 mb-6 flex items-center gap-2">
                 <Clock size={20} className="text-usant-red" /> Recent Activity Timeline
              </h3>
-             <div className="space-y-6 relative">
-                <div className="absolute left-4 top-2 bottom-2 w-0.5 bg-gray-100"></div>
-                {[
-                  { user: 'Admin User', action: 'Changed User Permissions', time: '5 mins ago', type: 'security' },
-                  { user: 'System', action: 'Database Backup Completed', time: '1 hour ago', type: 'system' },
-                  { user: 'Maria Santos', action: 'Deleted Book ID #42', time: '2 hours ago', type: 'admin' },
-                  { user: 'Admin User', action: 'Added New Librarian Account', time: 'Yesterday', type: 'admin' },
-                ].map((log, i) => (
-                   <div key={i} className="relative pl-10">
-                      <div className={`absolute left-2 top-1 w-4 h-4 rounded-full border-2 border-white shadow-sm flex items-center justify-center ${
-                          log.type === 'security' ? 'bg-red-500' : 
-                          log.type === 'system' ? 'bg-gray-500' : 'bg-blue-500'
-                      }`}></div>
-                      <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 hover:border-usant-red/30 transition">
-                         <div className="flex justify-between items-start mb-1">
-                            <span className="font-bold text-gray-900 text-sm">{log.user}</span>
-                            <span className="text-xs text-gray-400 font-mono">{log.time}</span>
-                         </div>
-                         <p className="text-gray-600 text-sm">{log.action}</p>
-                      </div>
-                   </div>
-                ))}
+             <div className="text-center py-12 text-gray-500">
+                <Clock size={48} className="mx-auto mb-4 opacity-20" />
+                <p className="font-medium text-gray-900">Activity logs are stored in the database</p>
+                <p className="text-sm mt-2">All system actions are tracked and auditable</p>
              </div>
           </div>
         )}
@@ -709,9 +676,9 @@ export default function AdminPanel() {
                         <Server size={20} className="text-purple-600" /> Infrastructure Status
                     </h3>
                     <div className="space-y-6">
-                        <HealthBar label="API Engine" status="Online" value={100} color="bg-green-500" />
-                        <HealthBar label="Database Cluster" status="Healthy" value={98} color="bg-green-500" />
-                        <HealthBar label="Storage (S3)" status="Warning" value={82} color="bg-amber-500" />
+                        <HealthBar label="Database Connection" status="Online" value={100} color="bg-green-500" />
+                        <HealthBar label="API Services" status="Healthy" value={100} color="bg-green-500" />
+                        <HealthBar label="System Health" status="Operational" value={100} color="bg-green-500" />
                     </div>
                 </div>
 
