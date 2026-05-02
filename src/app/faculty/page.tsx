@@ -1,7 +1,7 @@
 "use client";
 
 import Navbar from '@/app/components/Navbar';
-import { Book, Layers, FileText, ListPlus, Zap, BarChart3, TrendingUp, Users, ExternalLink, Plus, BookOpen, Clock } from 'lucide-react';
+import { Book, Layers, FileText, ListPlus, Zap, BarChart3, Users, ExternalLink, Plus, BookOpen, Clock } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/app/contexts/AuthContext';
@@ -49,6 +49,7 @@ export default function FacultyDashboard() {
   const [books, setBooks] = useState<Book[]>([]);
   const [journals, setJournals] = useState<Journal[]>([]);
   const [readingLists, setReadingLists] = useState<ReadingList[]>([]);
+  const [activeStudentCount, setActiveStudentCount] = useState<number | null>(null);
   const facultyDept = user?.department || 'Computer Science';
 
   useEffect(() => {
@@ -57,10 +58,11 @@ export default function FacultyDashboard() {
     let isMounted = true;
     const loadData = async () => {
       try {
-        const [booksRes, journalsRes, listsRes] = await Promise.all([
+        const [booksRes, journalsRes, listsRes, usersRes] = await Promise.all([
           fetch('/api/books?limit=1000', { headers: { Authorization: `Bearer ${token}` } }),
           fetch(`/api/journals?subject=${encodeURIComponent(facultyDept)}`, { headers: { Authorization: `Bearer ${token}` } }),
           fetch('/api/reading-lists', { headers: { Authorization: `Bearer ${token}` } }),
+          fetch('/api/users', { headers: { Authorization: `Bearer ${token}` } }),
         ]);
 
         if (booksRes.ok) {
@@ -76,6 +78,12 @@ export default function FacultyDashboard() {
         if (listsRes.ok) {
           const data = await listsRes.json();
           if (isMounted) setReadingLists(data.lists || []);
+        }
+
+        if (usersRes.ok) {
+          const data = await usersRes.json();
+          const students = (data.users || []).filter((u: { role: string; isActive: boolean }) => u.role === 'student' && u.isActive);
+          if (isMounted) setActiveStudentCount(students.length);
         }
       } catch (error) {
         console.error('Failed to load faculty data:', error);
@@ -179,9 +187,9 @@ export default function FacultyDashboard() {
                  </div>
                  <div>
                     <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Active Students</p>
-                    <p className="text-2xl font-black text-gray-900">124</p>
-                    <p className="text-[10px] text-green-500 font-bold flex items-center gap-1 mt-1">
-                       <TrendingUp size={10} /> +12% from last week
+                    <p className="text-2xl font-black text-gray-900">{activeStudentCount ?? '—'}</p>
+                    <p className="text-[10px] text-gray-400 font-bold mt-1">
+                       Active student accounts
                     </p>
                  </div>
               </div>

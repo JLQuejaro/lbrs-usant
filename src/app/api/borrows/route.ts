@@ -14,14 +14,14 @@ interface BorrowRow {
   book_id: string;
   title?: string;
   book_title?: string;
-  author: string;
-  color_theme: string;
+  author?: string | null;
+  color_theme?: string | null;
   borrowed_date: Date;
   due_date: Date;
-  returned_date: Date | null;
+  returned_date?: Date | null;
   status: string;
-  username: string;
-  email: string;
+  username?: string;
+  email?: string;
 }
 
 function mapBorrow(record: BorrowRow) {
@@ -30,14 +30,14 @@ function mapBorrow(record: BorrowRow) {
     userId: record.user_id,
     bookId: record.book_id,
     title: record.title || record.book_title,
-    author: record.author,
-    color: record.color_theme,
+    author: record.author || '',
+    color: record.color_theme || 'bg-gray-700',
     borrowedDate: record.borrowed_date,
     dueDate: record.due_date,
     returnedDate: record.returned_date,
     status: record.status,
-    username: record.username,
-    email: record.email,
+    username: record.username || '',
+    email: record.email || '',
   };
 }
 

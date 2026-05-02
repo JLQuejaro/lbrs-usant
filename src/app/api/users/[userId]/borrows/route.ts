@@ -27,8 +27,9 @@ function mapBorrow(record: any) {
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
+  const { userId } = await params;
   try {
     const userRole = request.headers.get('x-user-role');
     
@@ -43,7 +44,7 @@ export async function GET(
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status') || 'all';
     
-    const borrows = await getAllBorrowsByUserId(params.userId, status);
+    const borrows = await getAllBorrowsByUserId(userId, status);
     
     return NextResponse.json(
       { borrows: borrows.map(mapBorrow), count: borrows.length },
