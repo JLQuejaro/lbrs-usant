@@ -3,6 +3,7 @@ import {
   borrowBook, 
   returnBook, 
   getActiveBorrowsByUserId,
+  getAllBorrowsByUserId,
   getOverdueBorrows,
   getBorrowById
 } from '@/app/lib/db-repository';
@@ -26,10 +27,10 @@ function mapBorrow(record: any) {
 
 /**
  * GET /api/borrows
- * Get active borrow records for the authenticated user
+ * Get borrow records for the authenticated user
  * 
  * Query parameters:
- * - status: Filter by status (active, overdue)
+ * - status: Filter by status (active, overdue, all, returned)
  */
 export async function GET(request: NextRequest) {
   try {
@@ -58,7 +59,11 @@ export async function GET(request: NextRequest) {
         );
       }
       borrows = await getOverdueBorrows();
+    } else if (status === 'all' || status === 'returned') {
+      // Get all borrows or filtered by status
+      borrows = await getAllBorrowsByUserId(userId, status);
     } else {
+      // Default: active borrows only
       borrows = await getActiveBorrowsByUserId(userId);
     }
     

@@ -220,7 +220,7 @@ export default function StudentDashboard() {
       <main className="max-w-7xl mx-auto px-8 -mt-16 pb-12 relative z-20">
         
         {/* === QUICK ACCESS OVERVIEW === */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
 
            <Link href="/student/notifications-page" className="bg-white p-5 rounded-2xl shadow-lg border border-gray-100 flex items-center gap-4 hover:border-usant-red/30 transition-all group">
               <div className="p-3 bg-blue-50 rounded-xl text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors relative">
@@ -240,6 +240,16 @@ export default function StudentDashboard() {
               <div>
                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">My Shelf</p>
                  <p className="text-2xl font-black text-gray-900">{borrowCount} <span className="text-sm font-medium text-gray-500">Active Borrows</span></p>
+              </div>
+           </Link>
+
+           <Link href="/student/history" className="bg-white p-5 rounded-2xl shadow-lg border border-gray-100 flex items-center gap-4 hover:border-usant-red/30 transition-all group">
+              <div className="p-3 bg-purple-50 rounded-xl text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-colors">
+                 <History size={24} />
+              </div>
+              <div>
+                 <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">History</p>
+                 <p className="text-2xl font-black text-gray-900">View <span className="text-sm font-medium text-gray-500">Past Loans</span></p>
               </div>
            </Link>
         </div>

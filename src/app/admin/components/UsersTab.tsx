@@ -1,4 +1,4 @@
-import { Search, Plus, Edit, Trash2 } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, History } from 'lucide-react';
 
 interface UiUser {
   id: string;
@@ -62,6 +62,13 @@ export default function UsersTab({ users, searchTerm, setSearchTerm }: { users: 
               </td>
               <td className="px-6 py-4 text-right">
                 <div className="flex justify-end gap-2">
+                  <button 
+                    onClick={() => window.location.href = `/admin/users/${user.id}/history`}
+                    className="text-gray-400 hover:text-blue-600 p-1" 
+                    title="View Borrow History"
+                  >
+                    <History size={16}/>
+                  </button>
                   <button className="text-gray-400 hover:text-usant-red p-1"><Edit size={16}/></button>
                   <button className="text-gray-400 hover:text-red-600 p-1"><Trash2 size={16}/></button>
                 </div>

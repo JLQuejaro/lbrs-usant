@@ -52,6 +52,8 @@ export interface Book {
   status: string;
   location?: string | null;
   color_theme?: string | null;
+  isbn?: string | null;
+  cover_url?: string | null;
   borrow_count: number;
   views: number;
   featured: boolean;
@@ -71,6 +73,8 @@ export interface CreateBookInput {
   status?: string;
   location?: string | null;
   color_theme?: string | null;
+  isbn?: string | null;
+  cover_url?: string | null;
   featured?: boolean;
   courses?: string[];
 }
@@ -325,6 +329,8 @@ async function mapBooks(records: BookRecord[]): Promise<Book[]> {
       status: record.status,
       location: record.location,
       color_theme: record.colorTheme,
+      isbn: record.isbn,
+      cover_url: record.coverUrl,
       borrow_count: record.borrowCount,
       views: record.views,
       featured: record.featured,
@@ -532,14 +538,39 @@ export async function getBookById(bookId: string): Promise<Book | null> {
   return mapped ?? null;
 }
 
-export async function searchBooks(searchTerm: string): Promise<Book[]> {
+export async function searchBooks(searchTerm: string, course?: string): Promise<Book[]> {
   const books = await prisma.book.findMany({
     where: {
+      ...(course && {
+        courses: {
+          some: {
+            courseName: course,
+          },
+        },
+      }),
       OR: [
         { title: { contains: searchTerm, mode: 'insensitive' } },
         { author: { contains: searchTerm, mode: 'insensitive' } },
         { genre: { contains: searchTerm, mode: 'insensitive' } },
       ],
+    },
+    orderBy: {
+      title: 'asc',
+    },
+    include: bookInclude,
+  });
+
+  return mapBooks(books);
+}
+
+export async function getBooksByCourse(course: string): Promise<Book[]> {
+  const books = await prisma.book.findMany({
+    where: {
+      courses: {
+        some: {
+          courseName: course,
+        },
+      },
     },
     orderBy: {
       title: 'asc',
@@ -611,6 +642,8 @@ export async function createBook(bookData: CreateBookInput): Promise<Book> {
       status: bookData.status ?? (availableCopies > 0 ? 'Available' : 'Borrowed'),
       location: bookData.location ?? null,
       colorTheme: bookData.color_theme ?? null,
+      isbn: bookData.isbn ?? null,
+      coverUrl: bookData.cover_url ?? null,
       featured: bookData.featured ?? false,
       courses: courses.length > 0
         ? {
@@ -656,6 +689,8 @@ export interface UpdateBookInput {
   pages?: number | null;
   totalCopies?: number;
   availableCopies?: number;
+  isbn?: string | null;
+  cover_url?: string | null;
   courses?: string[];
 }
 
@@ -689,6 +724,8 @@ export async function updateBook(bookId: string, updateData: UpdateBookInput): P
       ...(updateData.pages !== undefined && { pages: updateData.pages }),
       ...(updateData.totalCopies !== undefined && { stockQuantity }),
       ...(updateData.availableCopies !== undefined && { availableCopies }),
+      ...(updateData.isbn !== undefined && { isbn: updateData.isbn }),
+      ...(updateData.cover_url !== undefined && { coverUrl: updateData.cover_url }),
       status: availableCopies > 0 ? 'Available' : 'Borrowed',
       ...(courses !== undefined && {
         courses: {
@@ -878,6 +915,21 @@ export async function getActiveBorrowsByUserId(userId: string): Promise<BorrowRe
     },
     orderBy: {
       dueDate: 'asc',
+    },
+    include: borrowInclude,
+  });
+
+  return borrows.map(mapBorrowRecord);
+}
+
+export async function getAllBorrowsByUserId(userId: string, status?: string): Promise<BorrowRecord[]> {
+  const borrows = await prisma.borrowRecord.findMany({
+    where: {
+      userId,
+      ...(status && status !== 'all' ? { status } : {}),
+    },
+    orderBy: {
+      borrowedDate: 'desc',
     },
     include: borrowInclude,
   });
@@ -1107,6 +1159,22 @@ export async function getNotificationsByUserId(
   });
 
   return notifications.map(mapNotificationRecord);
+}
+
+export async function markNotificationAsRead(notificationId: string, userId: string): Promise<Notification | null> {
+  const notification = await prisma.notification.update({
+    where: { id: notificationId, userId },
+    data: { isRead: true },
+  });
+
+  return notification ? mapNotificationRecord(notification) : null;
+}
+
+export async function markAllNotificationsAsRead(userId: string): Promise<void> {
+  await prisma.notification.updateMany({
+    where: { userId, isRead: false },
+    data: { isRead: true },
+  });
 }
 
 // ============================================================

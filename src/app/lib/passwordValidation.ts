@@ -38,13 +38,13 @@ export function validatePassword(
   const suggestions: string[] = [];
   let score = 0;
 
-  // Check minimum length (12 characters)
-  if (password.length < 12) {
-    errors.push('Password must be at least 12 characters long');
-    suggestions.push(`Add ${12 - password.length} more characters`);
+  // Check minimum length (8 characters)
+  if (password.length < 8) {
+    errors.push('Password must be at least 8 characters long');
+    suggestions.push(`Add ${8 - password.length} more characters`);
   } else {
     score += 20;
-    if (password.length >= 16) score += 10; // Bonus for longer passwords
+    if (password.length >= 12) score += 10; // Bonus for longer passwords
   }
 
   // Check for uppercase letters
@@ -71,52 +71,42 @@ export function validatePassword(
     score += 15;
   }
 
-  // Check for special characters
-  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
-    errors.push('Password must include at least one special character');
-    suggestions.push('Add special characters (!@#$%^&*)');
-  } else {
+  // Special characters are optional (bonus points only)
+  if (/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
     score += 15;
   }
 
-  // Check for common passwords
+  // Check for common passwords (warning only, reduce score but don't block)
   const lowerPassword = password.toLowerCase();
-  if (COMMON_PASSWORDS.some(common => lowerPassword.includes(common))) {
-    errors.push('Password contains common words or patterns');
-    suggestions.push('Avoid common passwords like "password" or "123456"');
+  if (COMMON_PASSWORDS.some(common => lowerPassword === common)) {
     score -= 20;
+    suggestions.push('Consider avoiding very common passwords');
   }
 
-  // Check for sequences
+  // Check for sequences (warning only)
   if (SEQUENCES.some(seq => lowerPassword.includes(seq))) {
-    errors.push('Password contains sequential characters');
-    suggestions.push('Avoid sequences like "abcd" or "1234"');
-    score -= 15;
-  }
-
-  // Check for repeated patterns (e.g., "aaa", "111")
-  if (/(.)\1{2,}/.test(password)) {
-    errors.push('Password contains repeated characters');
-    suggestions.push('Avoid repeating characters (e.g., "aaa", "111")');
     score -= 10;
   }
 
-  // Check for user-identifiable information
+  // Check for repeated patterns (warning only)
+  if (/(.)\1{3,}/.test(password)) {
+    score -= 10;
+  }
+
+  // Check for user-identifiable information (warning only)
   if (fullName) {
     const nameParts = fullName.toLowerCase().split(' ');
     if (nameParts.some(part => part.length > 2 && lowerPassword.includes(part))) {
-      errors.push('Password must not contain your name');
-      suggestions.push('Remove your name from the password');
-      score -= 20;
+      score -= 15;
+      suggestions.push('Avoid using your name in passwords');
     }
   }
 
   if (email) {
     const emailUsername = email.split('@')[0].toLowerCase();
     if (emailUsername.length > 2 && lowerPassword.includes(emailUsername)) {
-      errors.push('Password must not contain your email username');
-      suggestions.push('Remove your email username from the password');
-      score -= 20;
+      score -= 15;
+      suggestions.push('Avoid using your email in passwords');
     }
   }
 

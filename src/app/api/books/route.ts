@@ -6,6 +6,7 @@ import {
   deleteBook,
   getAllBooks,
   getBookById,
+  getBooksByCourse,
   getBooksByGenre,
   getFeaturedBooks,
   getNewAcquisitions,
@@ -37,6 +38,8 @@ function mapBookToUi(book: RepositoryBook) {
     featured: book.featured ?? false,
     dateAdded,
     courses,
+    isbn: book.isbn,
+    coverUrl: book.cover_url,
   };
 }
 
@@ -54,9 +57,10 @@ function getBookId(request: NextRequest, fallbackId?: unknown) {
 /**
  * GET /api/books
  * Get all books with optional filters
- * 
+ *
  * Query parameters:
  * - search: Search by title, author, or genre
+ * - course: Filter by course
  * - genre: Filter by genre
  * - featured: Get only featured books (true/false)
  * - new: Get new acquisitions (true/false)
@@ -65,14 +69,15 @@ function getBookId(request: NextRequest, fallbackId?: unknown) {
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    
+
     const id = searchParams.get('id');
     const search = searchParams.get('search');
+    const course = searchParams.get('course');
     const genre = searchParams.get('genre');
     const featured = searchParams.get('featured');
     const newAcquisitions = searchParams.get('new');
     const limit = parseInt(searchParams.get('limit') || '100', 10);
-    
+
     if (id) {
       const book = await getBookById(id);
       if (!book) {
@@ -89,9 +94,11 @@ export async function GET(request: NextRequest) {
     }
 
     let books;
-    
-    if (search) {
-      books = await searchBooks(search);
+
+    if (course) {
+      books = await getBooksByCourse(course);
+    } else if (search) {
+      books = await searchBooks(search, course || undefined);
     } else if (genre) {
       books = await getBooksByGenre(genre);
     } else if (featured === 'true') {
@@ -101,12 +108,12 @@ export async function GET(request: NextRequest) {
     } else {
       books = await getAllBooks(limit);
     }
-    
+
     return NextResponse.json(
       { books: books.map(mapBookToUi), count: books.length },
       { status: 200 }
     );
-    
+
   } catch (error) {
     console.error('Get books error:', error);
     return NextResponse.json(
@@ -178,6 +185,8 @@ export async function POST(request: NextRequest) {
         : typeof body?.color === 'string'
           ? body.color
           : null,
+      isbn: typeof body?.isbn === 'string' ? body.isbn.trim() : null,
+      cover_url: typeof body?.coverUrl === 'string' ? body.coverUrl.trim() : null,
       featured: Boolean(body?.featured),
       courses: Array.isArray(body?.courses) ? body.courses.map((course: unknown) => String(course)) : [],
     });
@@ -243,6 +252,8 @@ export async function PATCH(request: NextRequest) {
       pages?: number | null;
       totalCopies?: number;
       availableCopies?: number;
+      isbn?: string | null;
+      cover_url?: string | null;
       courses?: string[];
     } = {};
 
@@ -266,6 +277,12 @@ export async function PATCH(request: NextRequest) {
     }
     if (body?.availableCopies !== undefined) {
       updateData.availableCopies = Number(body.availableCopies);
+    }
+    if (body?.isbn !== undefined) {
+      updateData.isbn = typeof body.isbn === 'string' ? body.isbn.trim() : null;
+    }
+    if (body?.coverUrl !== undefined) {
+      updateData.cover_url = typeof body.coverUrl === 'string' ? body.coverUrl.trim() : null;
     }
     if (Array.isArray(body?.courses)) {
       updateData.courses = body.courses.map((course: unknown) => String(course));

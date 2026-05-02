@@ -159,6 +159,8 @@ model Book {
   status          String            @default("Available") @map("status") @db.VarChar(20)
   location        String?           @map("location") @db.VarChar(100)
   colorTheme      String?           @map("color_theme") @db.VarChar(30)
+  isbn            String?           @map("isbn") @db.VarChar(13) @unique
+  coverUrl        String?           @map("cover_url") @db.VarChar(500)
   borrowCount     Int               @default(0) @map("borrow_count")
   views           Int               @default(0) @map("views")
   featured        Boolean           @default(false) @map("featured")

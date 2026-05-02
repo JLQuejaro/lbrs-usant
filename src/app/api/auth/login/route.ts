@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyPassword, generateToken } from '@/app/lib/auth';
 import { getUserByEmail } from '@/app/lib/db-repository';
 import { isValidUniversityEmail, getEmailDomainError, logUnauthorizedAttempt } from '@/app/lib/email-validation';
+import { prisma } from '@/app/lib/prisma';
 
 /**
  * POST /api/auth/login
@@ -67,6 +68,12 @@ export async function POST(request: NextRequest) {
           { status: 401 }
         );
       }
+
+      // Update last login timestamp
+      await prisma.user.update({
+        where: { id: user.user_id },
+        data: { lastLoginAt: new Date() }
+      });
 
       // Generate JWT token
       const token = generateToken({
