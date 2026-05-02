@@ -9,6 +9,29 @@ USANT LBRS is a Next.js 16 application backed by Prisma ORM and PostgreSQL.
 - Prisma Studio: `npm run db:studio`
 - Repository layer: `src/app/lib/db-repository.ts`
 
+## Quick Start (After Cloning)
+
+```bash
+# Clone the repository
+git clone <repository-url>
+cd lbrs-usant
+
+# Install dependencies
+npm install
+
+# Set up environment variables
+cp .env.example .env.local
+# Edit .env.local with your DATABASE_URL, DIRECT_URL, JWT_SECRET, and NEXT_PUBLIC_APP_URL
+
+# Initialize database
+npm run db:generate
+npm run db:migrate
+npm run db:seed
+
+# Start development server
+npm run dev
+```
+
 ## Getting started
 
 1. Copy `.env.example` to `.env.local`.
