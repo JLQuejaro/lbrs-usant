@@ -19,6 +19,7 @@
     "db:test": "node scripts/test-db.js",
     "db:rehash-passwords": "ts-node scripts/rehash-passwords.ts",
     "db:mark-overdue": "ts-node scripts/mark-overdue-borrows.ts",
+    "db:recalculate-borrows": "tsx prisma/recalculate-borrows.ts",
     "test:rate-limit": "node scripts/test-rate-limit.js"
   },
   "dependencies": {

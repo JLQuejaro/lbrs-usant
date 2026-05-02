@@ -39,6 +39,13 @@ interface User {
   role: string;
 }
 
+interface LibrarianStats {
+  overdue: number;
+  monthlyBorrows: number;
+  lowCirculation: number;
+  totalBooksWithBorrows: number;
+}
+
 const librarianTabs = ['Inventory', 'Borrowing', 'Reports', 'Users', 'Acquisition'] as const;
 
 export default function LibrarianDashboard() {
@@ -50,6 +57,7 @@ export default function LibrarianDashboard() {
   const [books, setBooks] = useState<Book[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [inventoryError, setInventoryError] = useState<string | null>(null);
+  const [librarianStats, setLibrarianStats] = useState<LibrarianStats | null>(null);
   const { token } = useAuth();
 
   useEffect(() => {
@@ -58,9 +66,10 @@ export default function LibrarianDashboard() {
     let isMounted = true;
     const loadData = async () => {
       try {
-        const [booksRes, usersRes] = await Promise.all([
+        const [booksRes, usersRes, statsRes] = await Promise.all([
           fetch('/api/books?limit=1000', { headers: { Authorization: `Bearer ${token}` } }),
           fetch('/api/users', { headers: { Authorization: `Bearer ${token}` } }),
+          fetch('/api/stats/librarian', { headers: { Authorization: `Bearer ${token}` } }),
         ]);
 
         if (booksRes.ok) {
@@ -71,6 +80,11 @@ export default function LibrarianDashboard() {
         if (usersRes.ok) {
           const data = await usersRes.json();
           if (isMounted) setUsers(data.users || []);
+        }
+
+        if (statsRes.ok) {
+          const data = await statsRes.json();
+          if (isMounted) setLibrarianStats(data);
         }
       } catch (error) {
         console.error('Failed to load librarian data:', error);
@@ -427,21 +441,21 @@ export default function LibrarianDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <ReportCard 
                 title="Overdue Materials" 
-                count="24" 
+                count={librarianStats?.overdue.toString() || '0'} 
                 subtitle="Items requiring immediate attention" 
                 status="urgent"
                 icon={<Clock size={24} />}
               />
               <ReportCard 
                 title="Most Borrowed (MTD)" 
-                count="156" 
+                count={librarianStats?.monthlyBorrows.toString() || '0'} 
                 subtitle="Monthly borrowing volume" 
                 status="good"
                 icon={<TrendingUp size={24} />}
               />
               <ReportCard 
                 title="Low Circulation" 
-                count="42" 
+                count={librarianStats?.lowCirculation.toString() || '0'} 
                 subtitle="Materials not borrowed in 6+ months" 
                 status="info"
                 icon={<BarChart3 size={24} />}

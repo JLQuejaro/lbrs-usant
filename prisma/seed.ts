@@ -107,8 +107,8 @@ async function main() {
       status: 'Available',
       location: 'Shelf 4B - CS Section',
       colorTheme: 'bg-red-900',
-      borrowCount: 156,
-      views: 1200,
+      borrowCount: 0,
+      views: 45,
       featured: true,
     },
     {
@@ -123,8 +123,8 @@ async function main() {
       status: 'Available',
       location: 'Shelf 4A - SE Section',
       colorTheme: 'bg-blue-800',
-      borrowCount: 210,
-      views: 1500,
+      borrowCount: 0,
+      views: 67,
       featured: true,
     },
     {
@@ -139,8 +139,8 @@ async function main() {
       status: 'Borrowed',
       location: 'Shelf 4A - SE Section',
       colorTheme: 'bg-slate-700',
-      borrowCount: 145,
-      views: 980,
+      borrowCount: 0,
+      views: 32,
       featured: false,
     },
   ];
